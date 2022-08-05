@@ -1,0 +1,17 @@
+[
+    {
+        "keys": ["f5"],
+        "command": "chain",
+        "args": {
+            "commands": [
+                ["fif_addon_remove_last_search"],
+                ["show_panel", {"panel": "find_in_files"}],
+                ["find_all"],
+            ]
+
+        },
+        "context": [
+            { "key": "selector", "operand": "text.find-in-files"}
+        ]
+    }
+]
