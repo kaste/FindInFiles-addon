@@ -2,10 +2,11 @@ import sublime
 import sublime_plugin
 
 
-class fif_addon_remove_last_search(sublime_plugin.TextCommand):
-    def is_enabled(self):
-        return self.view.match_selector(0, "text.find-in-files")
+class fif_addon_refresh_last_search(sublime_plugin.TextCommand):
+    """Delete last search result and do the search again
 
+    This should look like a in-place refresh typically bound to `[F5]`
+    """
     def run(self, edit):
         view = self.view
         try:
@@ -18,3 +19,12 @@ class fif_addon_remove_last_search(sublime_plugin.TextCommand):
             view.size()
         )
         view.replace(edit, last_search_output_span, "")
+
+        window = view.window()
+        assert window  # we're a TextCommand on the UI thread!
+        window.run_command("chain", {
+            "commands": [
+                ["show_panel", {"panel": "find_in_files"}],
+                ["find_all"],
+            ]
+        })
