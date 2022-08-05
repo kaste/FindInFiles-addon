@@ -2,8 +2,54 @@
     {
         "keys": ["f5"],
         "command": "fif_addon_refresh_last_search",
+        "context": [{ "key": "selector", "operand": "text.find-in-files" }]
+    },
+
+    // If there is a selection, do the "finf-in-files" without further questions
+    {
+        "keys": ["ctrl+shift+f"],
+        "command": "chain",
+        "args": {
+            "commands": [
+                ["show_panel", { "panel": "find_in_files" }],
+                ["find_all"],
+                ["focus_panel", { "name": "find_results" }]
+            ]
+        },
         "context": [
-            { "key": "selector", "operand": "text.find-in-files"}
+            { "key": "num_selections", "operator": "equal", "operand": 1 },
+            {
+                "key": "selection_empty",
+                "operator": "equal",
+                "operand": false,
+                "match_all": true
+            }
         ]
     },
+
+    // `next_match` and `prev_match` only move the cursor/selection.  They
+    // don't switch views and "go-to" the location.
+    {
+        "keys": ["ctrl+."],
+        "command": "fif_addon_next_match",
+        "context": [{ "key": "selector", "operand": "text.find-in-files" }]
+    },
+    {
+        "keys": ["ctrl+,"],
+        "command": "fif_addon_prev_match",
+        "context": [{ "key": "selector", "operand": "text.find-in-files" }]
+    },
+
+    // Go-to to the location.
+    {
+        "keys": ["enter"],
+        "command": "chain",
+        "args": {
+            "commands": [
+                ["move_to", { "to": "hardbol" }],
+                ["next_result"]
+            ]
+        },
+        "context": [{ "key": "selector", "operand": "text.find-in-files" }]
+    }
 ]
