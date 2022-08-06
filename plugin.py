@@ -1,7 +1,7 @@
 import sublime
 import sublime_plugin
 
-from typing import List
+from typing import Dict, List
 
 
 class fif_addon_refresh_last_search(sublime_plugin.TextCommand):
@@ -33,6 +33,9 @@ class fif_addon_refresh_last_search(sublime_plugin.TextCommand):
 
 
 class fif_addon_listener(sublime_plugin.EventListener):
+    previous_views: Dict[sublime.Window, sublime.View] = {}
+    change_counts_by_window: Dict[sublime.Window, int] = {}
+
     def is_applicable(self, view):
         syntax = view.settings().get("syntax")
         return syntax.endswith("Find Results.hidden-tmLanguage") if syntax else False
@@ -40,6 +43,34 @@ class fif_addon_listener(sublime_plugin.EventListener):
     def on_activated_async(self, view):
         if self.is_applicable(view):
             view.settings().set("result_line_regex", "^ +([0-9]+)")
+
+            current_cc = view.change_count()
+            window = view.window()
+            previous_cc = self.change_counts_by_window.get(window)
+            if previous_cc != current_cc:
+                self.change_counts_by_window[window] = current_cc
+                previous_view = self.previous_views.get(window)
+                if previous_view and previous_cc is not None:
+                    place_view(window, view, previous_view)
+
+    def on_pre_close(self, view):
+        if self.is_applicable(view):
+            window = view.window()
+            self.change_counts_by_window.pop(window, None)
+            self.previous_views.pop(window, None)
+
+    def on_deactivated(self, view):
+        if view.element() is None:
+            window = view.window()
+            self.previous_views[window] = view
+
+
+def place_view(window: sublime.Window, view: sublime.View, after: sublime.View) -> None:
+    view_group, current_index = window.get_view_index(view)
+    group, index = window.get_view_index(after)
+    if view_group == group:
+        wanted_index = index + 1 if index < current_index else index
+        window.set_view_index(view, group, wanted_index)
 
 
 class fif_addon_next_match(sublime_plugin.TextCommand):
