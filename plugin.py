@@ -1,3 +1,5 @@
+from functools import partial
+
 import sublime
 import sublime_plugin
 
@@ -12,9 +14,13 @@ class fif_addon_refresh_last_search(sublime_plugin.TextCommand):
     def run(self, edit):
         view = self.view
         try:
-            last_search_start = view.find_all(r"^Searching \d files")[-1]
+            last_search_start = view.find_all(r"^Searching \d+ files")[-1]
         except IndexError:
             return
+
+        cursor = view.sel()[0].a
+        row, col = view.rowcol(cursor)
+        top_row, _ = view.rowcol(last_search_start.a)
 
         last_search_output_span = sublime.Region(
             max(0, last_search_start.a - 2),  # "-2" => also delete two preceding newlines
@@ -30,6 +36,34 @@ class fif_addon_refresh_last_search(sublime_plugin.TextCommand):
                 ["find_all"],
             ]
         })
+
+        def await_draw(cc, sink):
+            if view.change_count() != cc:
+                sink()
+            else:
+                sublime.set_timeout(partial(await_draw, cc, sink), 10)
+
+        def after_search_updated():
+            offset = row - top_row
+            try:
+                last_search_start = view.find_all(r"^Searching \d+ files")[-1]
+            except IndexError:
+                return
+            top_row_now, _ = view.rowcol(last_search_start.a)
+            next_row = top_row_now + offset
+            cursor_now = view.text_point(next_row, col)
+            view.run_command("fif_addon_set_sel", {
+                "regions": [(cursor_now, cursor_now)]
+            })
+
+        if row > top_row:
+            wait = partial(await_draw, view.change_count(), after_search_updated)
+            sublime.set_timeout(wait, 10)
+
+
+class fif_addon_set_sel(sublime_plugin.TextCommand):
+    def run(self, edit, regions):
+        set_sel(self.view, [sublime.Region(a, b) for a, b in regions])
 
 
 class fif_addon_listener(sublime_plugin.EventListener):
