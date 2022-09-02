@@ -109,26 +109,37 @@ def place_view(window: sublime.Window, view: sublime.View, after: sublime.View) 
 
 class fif_addon_next_match(sublime_plugin.TextCommand):
     def run(self, edit):
-        view = self.view
-        caret = view.sel()[0].b
+        def carets(view):
+            yield view.sel()[0].b
+            try:
+                yield view.find_all(r"^Searching \d+ files")[-1].a
+            except IndexError:
+                return
 
-        for r in view.get_regions("match"):
-            if r.begin() > caret:
-                set_sel(view, [r])
-                view.show(r, False)
-                break
+        view = self.view
+        regions = view.get_regions("match")
+        for caret in carets(view):
+            for r in regions:
+                if r.begin() > caret:
+                    set_sel(view, [r])
+                    view.show(r, False)
+                    return
 
 
 class fif_addon_prev_match(sublime_plugin.TextCommand):
     def run(self, edit):
-        view = self.view
-        caret = view.sel()[0].b
+        def carets(view):
+            yield view.sel()[0].b
+            yield view.size()
 
-        for r in reversed(view.get_regions("match")):
-            if r.end() < caret:
-                set_sel(view, [r])
-                view.show(r, False)
-                break
+        view = self.view
+        regions = view.get_regions("match")
+        for caret in carets(view):
+            for r in reversed(regions):
+                if r.end() < caret:
+                    set_sel(view, [r])
+                    view.show(r, False)
+                    return
 
 
 def set_sel(view: sublime.View, selection: List[sublime.Region]) -> None:
