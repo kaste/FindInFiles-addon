@@ -121,7 +121,7 @@ class fif_addon_next_match(sublime_plugin.TextCommand):
             for r in regions:
                 if r.begin() > caret:
                     set_sel(view, [r])
-                    view.show(r, False)
+                    view.show(r, True)
                     return
 
 
@@ -137,7 +137,7 @@ class fif_addon_prev_match(sublime_plugin.TextCommand):
             for r in reversed(regions):
                 if r.end() < caret:
                     set_sel(view, [r])
-                    view.show(r, False)
+                    view.show(r, True)
                     return
 
 
