@@ -38,12 +38,13 @@ class fif_addon_refresh_last_search(sublime_plugin.TextCommand):
         })
 
         def await_draw(cc, sink):
-            if view.change_count() != cc:
+            # wait for the view to stabilize!
+            if view.change_count() == cc:
                 sink()
             else:
-                sublime.set_timeout(partial(await_draw, cc, sink), 10)
+                sublime.set_timeout(partial(await_draw, view.change_count(), sink), 50)
 
-        def after_search_updated():
+        def after_search_finished():
             offset = row - top_row
             try:
                 last_search_start = view.find_all(r"^Searching \d+ files")[-1]
@@ -55,7 +56,7 @@ class fif_addon_refresh_last_search(sublime_plugin.TextCommand):
             view.run_command("fif_addon_set_cursor", {"cursor": cursor_now})
 
         if row > top_row:
-            wait = partial(await_draw, view.change_count(), after_search_updated)
+            wait = partial(await_draw, view.change_count(), after_search_finished)
             sublime.set_timeout(wait, 10)
 
 
