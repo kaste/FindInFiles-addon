@@ -18,12 +18,7 @@
         },
         "context": [
             { "key": "num_selections", "operator": "equal", "operand": 1 },
-            {
-                "key": "selection_empty",
-                "operator": "equal",
-                "operand": false,
-                "match_all": true
-            }
+            { "key": "selection_empty", "operator": "not_equal" }
         ]
     },
 
