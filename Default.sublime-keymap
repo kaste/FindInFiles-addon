@@ -11,7 +11,7 @@
         "command": "chain",
         "args": {
             "commands": [
-                ["show_panel", { "panel": "find_in_files" }],
+                ["show_panel", { "panel": "find_in_files", "where": "-<untitled*" }],
                 ["find_all"],
                 ["focus_panel", { "name": "find_results" }]
             ]
