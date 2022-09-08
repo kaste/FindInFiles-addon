@@ -52,18 +52,17 @@ class fif_addon_refresh_last_search(sublime_plugin.TextCommand):
             top_row_now, _ = view.rowcol(last_search_start.a)
             next_row = top_row_now + offset
             cursor_now = view.text_point(next_row, col)
-            view.run_command("fif_addon_set_sel", {
-                "regions": [(cursor_now, cursor_now)]
-            })
+            view.run_command("fif_addon_set_cursor", {"cursor": cursor_now})
 
         if row > top_row:
             wait = partial(await_draw, view.change_count(), after_search_updated)
             sublime.set_timeout(wait, 10)
 
 
-class fif_addon_set_sel(sublime_plugin.TextCommand):
-    def run(self, edit, regions):
-        set_sel(self.view, [sublime.Region(a, b) for a, b in regions])
+class fif_addon_set_cursor(sublime_plugin.TextCommand):
+    def run(self, edit, cursor):
+        set_sel(self.view, [sublime.Region(cursor)])
+        self.view.show(cursor)
 
 
 class fif_addon_listener(sublime_plugin.EventListener):
