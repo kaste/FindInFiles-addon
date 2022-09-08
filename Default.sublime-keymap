@@ -5,7 +5,7 @@
         "context": [{ "key": "selector", "operand": "text.find-in-files" }]
     },
 
-    // If there is a selection, do the "finf-in-files" without further questions
+    // If there is a selection, do the "find-in-files" without further questions
     {
         "keys": ["ctrl+shift+f"],
         "command": "chain",
