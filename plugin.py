@@ -1,3 +1,4 @@
+from contextlib import contextmanager
 from functools import partial
 
 import sublime
@@ -140,6 +141,50 @@ class fif_addon_prev_match(sublime_plugin.TextCommand):
                     set_sel(view, [r])
                     view.show(r, True)
                     return
+
+
+class fif_addon_goto(sublime_plugin.TextCommand):
+    def run(self, edit):
+        view = self.view
+        window = view.window(); assert window
+
+        r, c = view.rowcol(caret(view))
+        column_offset = _column_offset(view)
+        s = view.sel()[0]
+        count_line_breaks = len(view.lines(s)) - 1
+        len_s = s.b - s.a
+        if len_s < 0:
+            len_s += count_line_breaks * column_offset
+        else:
+            len_s -= count_line_breaks * column_offset
+
+        with restore_selection(view):
+            view.run_command("move_to", {"to": "hardbol"})
+            window.run_command("next_result")
+
+            view_ = window.active_view()
+            caret_ = caret(view_) + c - column_offset
+            set_sel(view_, [sublime.Region(caret_ - len_s, caret_)])
+
+
+@contextmanager
+def restore_selection(view: sublime.View):
+    frozen_sel = [s for s in view.sel()]
+    yield
+    set_sel(view, frozen_sel)
+
+
+def caret(view: sublime.View) -> int:
+    return view.sel()[0].b
+
+
+def _column_offset(view: sublime.View) -> int:
+    line_region = view.line(caret(view))
+    for r, scope in view.extract_tokens_with_scopes(line_region):
+        if "constant.numeric.line-number." in scope:
+            return r.b + 2 - line_region.a  # 2 spaces or `: `
+    else:
+        return 0
 
 
 def set_sel(view: sublime.View, selection: List[sublime.Region]) -> None:

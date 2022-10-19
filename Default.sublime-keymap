@@ -38,13 +38,7 @@
     // Go-to to the location.
     {
         "keys": ["enter"],
-        "command": "chain",
-        "args": {
-            "commands": [
-                ["move_to", { "to": "hardbol" }],
-                ["next_result"]
-            ]
-        },
+        "command": "fif_addon_goto",
         "context": [{ "key": "selector", "operand": "text.find-in-files" }]
     }
 ]

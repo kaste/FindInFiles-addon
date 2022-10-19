@@ -4,7 +4,8 @@ The plugin with the following features:
 
 1. Make all lines in a find-in-files result buffer double-clickable.
 
-2. Bind `<enter>` to do the same thing, namely go to that line.
+2. Bind `<enter>` to do the same thing, namely go to that line.  (But also
+set the column, well ... just the complete selection.)
 
 3. Bind `ctrl+,` and `ctrl+.` to go to the previous or next match staying in the
 result buffer. Just move the cursor ("navigate") around. Wraps at the edges but
