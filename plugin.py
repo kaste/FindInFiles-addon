@@ -1,10 +1,11 @@
+from collections import defaultdict
 from contextlib import contextmanager
 from functools import partial
 
 import sublime
 import sublime_plugin
 
-from typing import Dict, List
+from typing import Callable, DefaultDict, Dict, List
 
 
 class fif_addon_refresh_last_search(sublime_plugin.TextCommand):
@@ -150,6 +151,7 @@ class fif_addon_goto(sublime_plugin.TextCommand):
 
         r, c = view.rowcol(caret(view))
         column_offset = _column_offset(view)
+        col = c - column_offset
         s = view.sel()[0]
         count_line_breaks = len(view.lines(s)) - 1
         len_s = s.b - s.a
@@ -163,8 +165,36 @@ class fif_addon_goto(sublime_plugin.TextCommand):
             window.run_command("next_result")
 
             view_ = window.active_view()
-            caret_ = caret(view_) + c - column_offset
-            set_sel(view_, [sublime.Region(caret_ - len_s, caret_)])
+
+            def carry_selection_to_view(view):
+                caret_ = caret(view) + col
+                set_sel(view, [sublime.Region(caret_ - len_s, caret_)])
+
+            if view_:
+                when_loaded(view_, carry_selection_to_view)
+
+
+Callback = Callable[[sublime.View], None]
+VIEWS_YET_TO_BE_LOADED: DefaultDict[sublime.View, List[Callback]] \
+    = defaultdict(list)
+
+
+def when_loaded(view: sublime.View, kont: Callback) -> None:
+    if view.is_loading():
+        VIEWS_YET_TO_BE_LOADED[view].append(kont)
+    else:
+        kont(view)
+
+
+class fif_addon_await_loading_views(sublime_plugin.EventListener):
+    def on_load(self, view):
+        try:
+            fns = VIEWS_YET_TO_BE_LOADED.pop(view)
+        except KeyError:
+            return
+
+        for fn in fns:
+            sublime.set_timeout(lambda: fn(view))
 
 
 @contextmanager
