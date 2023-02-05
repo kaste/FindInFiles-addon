@@ -88,7 +88,7 @@ class fif_addon_listener(sublime_plugin.EventListener):
             if previous_cc != current_cc:
                 self.change_counts_by_window[window] = current_cc
                 previous_view = self.previous_views.get(window)
-                if previous_view and previous_cc is not None:
+                if previous_view:
                     place_view(window, view, previous_view)
 
     def on_modified_async(self, view):
