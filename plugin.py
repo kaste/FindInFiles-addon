@@ -71,6 +71,7 @@ class fif_addon_set_cursor(sublime_plugin.TextCommand):
 class fif_addon_listener(sublime_plugin.EventListener):
     previous_views: Dict[sublime.Window, sublime.View] = {}
     change_counts_by_window: Dict[sublime.Window, int] = {}
+    handle_modified_events: Dict[sublime.Window, bool] = {}
 
     def is_applicable(self, view):
         syntax = view.settings().get("syntax")
@@ -82,6 +83,7 @@ class fif_addon_listener(sublime_plugin.EventListener):
 
             current_cc = view.change_count()
             window = view.window()
+            self.handle_modified_events[window] = True
             previous_cc = self.change_counts_by_window.get(window)
             if previous_cc != current_cc:
                 self.change_counts_by_window[window] = current_cc
@@ -89,16 +91,28 @@ class fif_addon_listener(sublime_plugin.EventListener):
                 if previous_view and previous_cc is not None:
                     place_view(window, view, previous_view)
 
+    def on_modified_async(self, view):
+        if self.is_applicable(view):
+            window = view.window()
+            if self.handle_modified_events.get(window):
+                current_cc = view.change_count()
+                self.change_counts_by_window[window] = current_cc
+
     def on_pre_close(self, view):
         if self.is_applicable(view):
             window = view.window()
             self.change_counts_by_window.pop(window, None)
             self.previous_views.pop(window, None)
+            self.handle_modified_events.pop(window, None)
 
     def on_deactivated(self, view):
         if view.element() is None:
             window = view.window()
             self.previous_views[window] = view
+
+        if self.is_applicable(view):
+            window = view.window()
+            self.handle_modified_events[window] = False
 
 
 def place_view(window: sublime.Window, view: sublime.View, after: sublime.View) -> None:
