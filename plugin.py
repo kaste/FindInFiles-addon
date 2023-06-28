@@ -161,7 +161,8 @@ class fif_addon_prev_match(sublime_plugin.TextCommand):
 class fif_addon_goto(sublime_plugin.TextCommand):
     def run(self, edit):
         view = self.view
-        window = view.window(); assert window
+        window = view.window()
+        assert window
 
         r, c = view.rowcol(caret(view))
         column_offset = _column_offset(view)
