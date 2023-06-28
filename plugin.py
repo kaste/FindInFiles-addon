@@ -39,6 +39,22 @@ class fif_addon_refresh_last_search(sublime_plugin.TextCommand):
             ]
         })
 
+        def await_first_draw(cc, sink):
+            if view.change_count() == cc:
+                sublime.set_timeout(partial(await_first_draw, view.change_count(), sink), 1)
+            else:
+                sink()
+
+        def fix_leading_newlines():
+            # We just modify the cursor as Sublime Text uses `append` for drawing
+            set_sel(view, [sublime.Region(0)])
+            view.run_command("right_delete")
+            view.run_command("right_delete")
+
+        if last_search_output_span.a == 0:
+            fix_task = partial(await_first_draw, view.change_count(), fix_leading_newlines)
+            sublime.set_timeout(fix_task)
+
         def await_draw(cc, sink):
             # wait for the view to stabilize!
             if view.change_count() == cc:
