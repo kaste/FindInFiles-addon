@@ -40,5 +40,11 @@
         "keys": ["enter"],
         "command": "fif_addon_goto",
         "context": [{ "key": "selector", "operand": "text.find-in-files" }]
+    },
+
+    {
+        "keys": ["escape"],
+        "command": "close",
+        "context": [{ "key": "selector", "operand": "text.find-in-files" }]
     }
 ]
