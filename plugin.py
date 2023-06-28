@@ -165,7 +165,7 @@ class fif_addon_goto(sublime_plugin.TextCommand):
 
         r, c = view.rowcol(caret(view))
         column_offset = _column_offset(view)
-        col = c - column_offset
+        col = max(0, c - column_offset)
         s = view.sel()[0]
         count_line_breaks = len(view.lines(s)) - 1
         len_s = s.b - s.a
