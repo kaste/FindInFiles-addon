@@ -84,6 +84,39 @@ class fif_addon_set_cursor(sublime_plugin.TextCommand):
         self.view.show(cursor)
 
 
+class fif_addon_wait_for_search_to_be_done_listener(sublime_plugin.EventListener):
+    def is_applicable(self, view):
+        syntax = view.settings().get("syntax")
+        return syntax.endswith("Find Results.hidden-tmLanguage") if syntax else False
+
+    def on_modified(self, view):
+        if self.is_applicable(view):
+            matches: List[str] = []
+            try:
+                region = view.find_all(r"^\d+ matches .*", fmt="$0", extractions=matches)[-1]
+            except IndexError:
+                return
+
+            if region.b != view.size() - 1:
+                return
+
+            text = matches[-1]
+            if text.startswith("0"):
+                return
+
+            last_search_start = view.find(
+                r"^Searching \d+ files .*",
+                view.size(),
+                sublime.FindFlags.REVERSE  # type: ignore[attr-defined]
+            )
+            if view.substr(last_search_start).endswith(text):
+                return
+
+            with restore_selection(view):
+                set_sel(view, [sublime.Region(last_search_start.b)])
+                view.run_command("insert", {"characters": f", {text}"})
+
+
 class fif_addon_listener(sublime_plugin.EventListener):
     previous_views: Dict[sublime.Window, sublime.View] = {}
     change_counts_by_window: Dict[sublime.Window, int] = {}
