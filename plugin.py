@@ -97,23 +97,27 @@ class fif_addon_wait_for_search_to_be_done_listener(sublime_plugin.EventListener
     def on_modified(self, view):
         if self.is_applicable(view):
             text = view.substr(view.line(view.size() - 1))
-            if text.startswith("0"):
-                return
-
             if regex.search(text) is None:
                 return
 
-            last_search_start = view.find(
-                r"^Searching \d+ files .*",
-                view.size(),
-                sublime.FindFlags.REVERSE  # type: ignore[attr-defined]
-            )
-            if view.substr(last_search_start).endswith(text):
-                return
+            update_searching_headline(view, text)
 
-            with restore_selection(view):
-                set_sel(view, [sublime.Region(last_search_start.b)])
-                view.run_command("insert", {"characters": f", {text}"})
+
+def update_searching_headline(view, text):
+    if text.startswith("0"):
+        return
+
+    last_search_start = view.find(
+        r"^Searching \d+ files .*",
+        view.size(),
+        sublime.FindFlags.REVERSE  # type: ignore[attr-defined]
+    )
+    if view.substr(last_search_start).endswith(text):
+        return
+
+    with restore_selection(view):
+        set_sel(view, [sublime.Region(last_search_start.b)])
+        view.run_command("insert", {"characters": f", {text}"})
 
 
 class fif_addon_listener(sublime_plugin.EventListener):
