@@ -41,21 +41,14 @@ class fif_addon_refresh_last_search(sublime_plugin.TextCommand):
             ]
         })
 
-        def await_first_draw(cc, sink):
-            if view.change_count() == cc:
-                sublime.set_timeout(partial(await_first_draw, view.change_count(), sink), 1)
-            else:
-                sink()
-
-        def fix_leading_newlines():
+        def fix_leading_newlines(view):
             # We just modify the cursor as Sublime Text uses `append` for drawing
             set_sel(view, [sublime.Region(0)])
             view.run_command("right_delete")
             view.run_command("right_delete")
 
         if last_search_output_span.a == 0:
-            fix_task = partial(await_first_draw, view.change_count(), fix_leading_newlines)
-            sublime.set_timeout(fix_task)
+            on_next_modification(view, fix_leading_newlines)
 
         def after_search_finished(view):
             offset = row - top_row
@@ -79,10 +72,15 @@ class fif_addon_set_cursor(sublime_plugin.TextCommand):
 
 
 _on_search_finished: DefaultDict[sublime.View, List[Callback]] = defaultdict(list)
+_on_next_modification: DefaultDict[sublime.View, List[Callback]] = defaultdict(list)
 
 
 def on_search_finished(view: sublime.View, fn: Callback) -> None:
     _on_search_finished[view].append(fn)
+
+
+def on_next_modification(view: sublime.View, fn: Callback) -> None:
+    _on_next_modification[view].append(fn)
 
 
 regex = re.compile(r"\d+ match(es)? .*")
@@ -95,6 +93,8 @@ class fif_addon_wait_for_search_to_be_done_listener(sublime_plugin.EventListener
 
     def on_modified(self, view):
         if self.is_applicable(view):
+            run_handlers(view, _on_next_modification)
+
             text = view.substr(view.line(view.size() - 1))
             if regex.search(text) is None:
                 return
