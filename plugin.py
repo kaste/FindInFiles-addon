@@ -7,6 +7,7 @@ import sublime
 import sublime_plugin
 
 from typing import Callable, DefaultDict, Dict, List
+Callback = Callable[[sublime.View], None]
 
 
 class fif_addon_refresh_last_search(sublime_plugin.TextCommand):
@@ -236,7 +237,6 @@ class fif_addon_goto(sublime_plugin.TextCommand):
                 when_loaded(view_, carry_selection_to_view)
 
 
-Callback = Callable[[sublime.View], None]
 VIEWS_YET_TO_BE_LOADED: DefaultDict[sublime.View, List[Callback]] \
     = defaultdict(list)
 
@@ -250,13 +250,17 @@ def when_loaded(view: sublime.View, kont: Callback) -> None:
 
 class fif_addon_await_loading_views(sublime_plugin.EventListener):
     def on_load(self, view):
-        try:
-            fns = VIEWS_YET_TO_BE_LOADED.pop(view)
-        except KeyError:
-            return
+        run_handlers(view, VIEWS_YET_TO_BE_LOADED)
 
-        for fn in fns:
-            sublime.set_timeout(lambda: fn(view))
+
+def run_handlers(view, storage: Dict[sublime.View, List[Callback]]):
+    try:
+        fns = storage.pop(view)
+    except KeyError:
+        return
+
+    for fn in fns:
+        sublime.set_timeout(lambda: fn(view))
 
 
 @contextmanager
