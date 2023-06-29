@@ -2,3 +2,4 @@
 max-line-length = 100
 ignore=
     E702
+    E731
