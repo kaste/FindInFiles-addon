@@ -25,6 +25,7 @@ class fif_addon_refresh_last_search(sublime_plugin.TextCommand):
         cursor = view.sel()[0].a
         row, col = view.rowcol(cursor)
         top_row, _ = view.rowcol(last_search_start.a)
+        row_offset = row - top_row
 
         last_search_output_span = sublime.Region(
             max(0, last_search_start.a - 2),  # "-2" => also delete two preceding newlines
@@ -41,28 +42,31 @@ class fif_addon_refresh_last_search(sublime_plugin.TextCommand):
             ]
         })
 
-        def fix_leading_newlines(view):
-            # We just modify the cursor as Sublime Text uses `append` for drawing
-            set_sel(view, [sublime.Region(0)])
-            view.run_command("right_delete")
-            view.run_command("right_delete")
-
         if last_search_output_span.a == 0:
             on_next_modification(view, fix_leading_newlines)
 
-        def after_search_finished(view):
-            offset = row - top_row
-            try:
-                last_search_start = view.find_all(r"^Searching \d+ files")[-1]
-            except IndexError:
-                return
-            top_row_now, _ = view.rowcol(last_search_start.a)
-            next_row = top_row_now + offset
-            cursor_now = view.text_point(next_row, col)
-            view.run_command("fif_addon_set_cursor", {"cursor": cursor_now})
-
         if row > top_row:
-            on_search_finished(view, after_search_finished)
+            restore_previous_cursor_ = partial(
+                restore_previous_cursor, row_offset=row_offset, col=col)
+            on_search_finished(view, restore_previous_cursor_)
+
+
+def fix_leading_newlines(view):
+    # We just modify the cursor as Sublime Text uses `append` for drawing
+    set_sel(view, [sublime.Region(0)])
+    view.run_command("right_delete")
+    view.run_command("right_delete")
+
+
+def restore_previous_cursor(view, row_offset, col):
+    try:
+        last_search_start = view.find_all(r"^Searching \d+ files")[-1]
+    except IndexError:
+        return
+    top_row_now, _ = view.rowcol(last_search_start.a)
+    next_row = top_row_now + row_offset
+    cursor_now = view.text_point(next_row, col)
+    view.run_command("fif_addon_set_cursor", {"cursor": cursor_now})
 
 
 class fif_addon_set_cursor(sublime_plugin.TextCommand):
