@@ -57,14 +57,7 @@ class fif_addon_refresh_last_search(sublime_plugin.TextCommand):
             fix_task = partial(await_first_draw, view.change_count(), fix_leading_newlines)
             sublime.set_timeout(fix_task)
 
-        def await_draw(cc, sink):
-            # wait for the view to stabilize!
-            if view.change_count() == cc:
-                sink()
-            else:
-                sublime.set_timeout(partial(await_draw, view.change_count(), sink), 50)
-
-        def after_search_finished():
+        def after_search_finished(view):
             offset = row - top_row
             try:
                 last_search_start = view.find_all(r"^Searching \d+ files")[-1]
@@ -76,14 +69,20 @@ class fif_addon_refresh_last_search(sublime_plugin.TextCommand):
             view.run_command("fif_addon_set_cursor", {"cursor": cursor_now})
 
         if row > top_row:
-            wait = partial(await_draw, view.change_count(), after_search_finished)
-            sublime.set_timeout(wait, 10)
+            on_search_finished(view, after_search_finished)
 
 
 class fif_addon_set_cursor(sublime_plugin.TextCommand):
     def run(self, edit, cursor):
         set_sel(self.view, [sublime.Region(cursor)])
         self.view.show(cursor)
+
+
+_on_search_finished: DefaultDict[sublime.View, List[Callback]] = defaultdict(list)
+
+
+def on_search_finished(view: sublime.View, fn: Callback) -> None:
+    _on_search_finished[view].append(fn)
 
 
 regex = re.compile(r"\d+ match(es)? .*")
@@ -101,6 +100,7 @@ class fif_addon_wait_for_search_to_be_done_listener(sublime_plugin.EventListener
                 return
 
             update_searching_headline(view, text)
+            run_handlers(view, _on_search_finished)
 
 
 def update_searching_headline(view, text):
