@@ -6,7 +6,7 @@ import re
 import sublime
 import sublime_plugin
 
-from typing import Callable, DefaultDict, Dict, List
+from typing import Callable, DefaultDict, Dict, List, Tuple, Union
 Callback = Callable[[sublime.View], None]
 
 
@@ -75,6 +75,19 @@ class fif_addon_set_cursor(sublime_plugin.TextCommand):
         self.view.show(cursor)
 
 
+class fif_addon_replace_text(sublime_plugin.TextCommand):
+    def run(self, edit, text, region: Tuple[int, int]):
+        self.view.replace(edit, sublime.Region(*region), text)
+
+
+def replace_view_content(view, text, region: Union[int, sublime.Region]) -> None:
+    if isinstance(region, int):
+        region_ = (region, region)
+    else:
+        region_ = (region.a, region.b)
+    view.run_command("fif_addon_replace_text", {"text": text, "region": region_})
+
+
 _on_search_finished: DefaultDict[sublime.View, List[Callback]] = defaultdict(list)
 _on_next_modification: DefaultDict[sublime.View, List[Callback]] = defaultdict(list)
 
@@ -119,9 +132,7 @@ def update_searching_headline(view, text):
     if view.substr(last_search_start).endswith(text):
         return
 
-    with restore_selection(view):
-        set_sel(view, [sublime.Region(last_search_start.b)])
-        view.run_command("insert", {"characters": f", {text}"})
+    replace_view_content(view, f", {text}", last_search_start.b)
 
 
 class fif_addon_listener(sublime_plugin.EventListener):
