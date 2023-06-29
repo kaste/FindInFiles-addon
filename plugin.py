@@ -1,6 +1,7 @@
 from collections import defaultdict
 from contextlib import contextmanager
 from functools import partial
+import re
 
 import sublime
 import sublime_plugin
@@ -84,6 +85,9 @@ class fif_addon_set_cursor(sublime_plugin.TextCommand):
         self.view.show(cursor)
 
 
+regex = re.compile(r"\d+ match(es)? .*")
+
+
 class fif_addon_wait_for_search_to_be_done_listener(sublime_plugin.EventListener):
     def is_applicable(self, view):
         syntax = view.settings().get("syntax")
@@ -91,17 +95,11 @@ class fif_addon_wait_for_search_to_be_done_listener(sublime_plugin.EventListener
 
     def on_modified(self, view):
         if self.is_applicable(view):
-            matches: List[str] = []
-            try:
-                region = view.find_all(r"^\d+ matches .*", fmt="$0", extractions=matches)[-1]
-            except IndexError:
-                return
-
-            if region.b != view.size() - 1:
-                return
-
-            text = matches[-1]
+            text = view.substr(view.line(view.size() - 1))
             if text.startswith("0"):
+                return
+
+            if regex.search(text) is None:
                 return
 
             last_search_start = view.find(
