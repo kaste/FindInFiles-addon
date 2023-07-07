@@ -184,6 +184,8 @@ class fif_addon_listener(sublime_plugin.EventListener):
 
 def place_view(window: sublime.Window, view: sublime.View, after: sublime.View) -> None:
     view_group, current_index = window.get_view_index(view)
+    if current_index == -1:
+        return
     group, index = window.get_view_index(after)
     if view_group == group:
         wanted_index = index + 1 if index < current_index else index
