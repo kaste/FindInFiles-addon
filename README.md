@@ -15,11 +15,15 @@ stays in the same search. [1]
 maybe we can change that and redo the search the cursor is currently in. But
 for now it is the _last_ search in the buffer.
 
-5. If you reuse the result buffer (and it is a tab, not the panel thing at the
+5. Bind `+` and `-` to change the context lines.  Assuming that you by default
+show the result with some context lines, hitting `-` repeatedly will toggle from
+no context to your default.
+
+6. If you reuse the result buffer (and it is a tab, not the panel thing at the
 bottom of the window), the tab moves with you so that `ctrl+w` (aka closing the
 tab) brings you to the view where youy initiated the search.
 
-6. Re-bind `ctrl+shift+f` to immediately do the search **if** you have exactly
+7. Re-bind `ctrl+shift+f` to immediately do the search **if** you have exactly
 one selection. Exclude untitled buffers in that case. (Ah ... debatable, maybe
 should be behind a switch.)
 

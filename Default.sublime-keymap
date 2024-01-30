@@ -5,6 +5,19 @@
         "context": [{ "key": "selector", "operand": "text.find-in-files" }]
     },
 
+    {
+        "keys": ["+"],
+        "command": "fif_addon_change_context_lines",
+        "args": {"more": true},
+        "context": [{ "key": "selector", "operand": "text.find-in-files" }]
+    },
+    {
+        "keys": ["-"],
+        "command": "fif_addon_change_context_lines",
+        "args": {"more": false},
+        "context": [{ "key": "selector", "operand": "text.find-in-files" }]
+    },
+
     // If there is a selection, do the "find-in-files" without further questions
     {
         "keys": ["ctrl+shift+f"],
