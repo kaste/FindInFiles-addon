@@ -3,3 +3,5 @@ max-line-length = 100
 ignore=
     E702
     E731
+    W503
+    W504
