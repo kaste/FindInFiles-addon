@@ -11,6 +11,9 @@ set the column, well ... just the complete selection.)
 result buffer. Just move the cursor ("navigate") around. Wraps at the edges but
 stays in the same search. [1]
 
+But you can also bind `fif_addon_prev_match` and `fif_addon_next_match` on your
+own.
+
 4. Bind `F5` to refresh the view, t.i. redo the _last_ search. Hm, :thinking:,
 maybe we can change that and redo the search the cursor is currently in. But
 for now it is the _last_ search in the buffer.
