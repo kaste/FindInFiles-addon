@@ -20,7 +20,7 @@
 
     // If there is a selection, do the "find-in-files" without further questions
     {
-        "keys": ["ctrl+shift+f"],
+        "keys": ["primary+shift+f"],
         "command": "chain",
         "args": {
             "commands": [
@@ -39,12 +39,12 @@
     // `next_match` and `prev_match` only move the cursor/selection.  They
     // don't switch views and "go-to" the location.
     {
-        "keys": ["ctrl+."],
+        "keys": ["."],
         "command": "fif_addon_next_match",
         "context": [{ "key": "selector", "operand": "text.find-in-files" }]
     },
     {
-        "keys": ["ctrl+,"],
+        "keys": [","],
         "command": "fif_addon_prev_match",
         "context": [{ "key": "selector", "operand": "text.find-in-files" }]
     },

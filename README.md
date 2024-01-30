@@ -7,12 +7,12 @@ The plugin with the following features:
 2. Bind `<enter>` to do the same thing, namely go to that line.  (But also
 set the column, well ... just the complete selection.)
 
-3. Bind `ctrl+,` and `ctrl+.` to go to the previous or next match staying in the
+3. Bind `,` and `.` to go to the previous or next match staying in the
 result buffer. Just move the cursor ("navigate") around. Wraps at the edges but
 stays in the same search. [1]
 
-But you can also bind `fif_addon_prev_match` and `fif_addon_next_match` on your
-own.
+    But you can also bind `fif_addon_prev_match` and `fif_addon_next_match` on
+    your own.
 
 4. Bind `F5` to refresh the view, t.i. redo the _last_ search. Hm, :thinking:,
 maybe we can change that and redo the search the cursor is currently in. But
