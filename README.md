@@ -27,8 +27,8 @@ bottom of the window), the tab moves with you so that `ctrl+w` (aka closing the
 tab) brings you to the view where youy initiated the search.
 
 7. Re-bind `ctrl+shift+f` to immediately do the search **if** you have exactly
-one selection. Exclude untitled buffers in that case. (Ah ... debatable, maybe
-should be behind a switch.)
+one selection. Exclude untitled buffers in that case.  (You can turn this off
+by setting `"leave_my_keys_alone": true` in the your user preferences.)
 
 [1] You know, the result buffer can be re-used and then holds the results of
 multiple searches.

@@ -31,7 +31,8 @@
         },
         "context": [
             { "key": "num_selections", "operator": "equal", "operand": 1 },
-            { "key": "selection_empty", "operator": "not_equal" }
+            { "key": "selection_empty", "operator": "not_equal" },
+            { "key": "setting.leave_my_keys_alone", "operator": "not_equal" }
         ]
     },
 
