@@ -1,0 +1,6 @@
+# Files and directories with the attribute export-ignore won’t be added to
+# archive files. See http://git-scm.com/docs/gitattributes for details.
+
+/stubs/              export-ignore
+.flake8              export-ignore
+mypy.ini             export-ignore
