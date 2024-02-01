@@ -26,6 +26,7 @@ class fif_addon_refresh_last_search(sublime_plugin.TextCommand):
         row, col = view.rowcol(cursor)
         top_row, _ = view.rowcol(last_search_start.a)
         row_offset = row - top_row
+        position = read_position(view)
 
         last_search_output_span = sublime.Region(
             max(0, last_search_start.a - 2),  # "-2" => also delete two preceding newlines
@@ -47,8 +48,40 @@ class fif_addon_refresh_last_search(sublime_plugin.TextCommand):
 
         if row > top_row:
             restore_previous_cursor_ = partial(
-                restore_previous_cursor, row_offset=row_offset, col=col)
+                restore_previous_cursor,
+                row_offset=row_offset,
+                col=col,
+                position_description=position
+            )
             on_search_finished(view, restore_previous_cursor_)
+
+
+def read_position(view: sublime.View):
+    cursor = view.sel()[0].a
+    try:
+        last_search_start = view.find_all(r"^Searching \d+ files")[-1]
+    except IndexError:
+        last_search_start = sublime.Region(0)
+
+    filename = None
+    for r in reversed(view.find_by_selector("entity.name.filename.find-in-files")):
+        if r.a < last_search_start.a:
+            break
+        if r.a < cursor:
+            filename = line_content_on(view, r.a)
+            break
+
+    nearest_match = None
+    for r in reversed(view.get_regions("match")):
+        if r.a < cursor:
+            nearest_match = line_content_on(view, r.a)
+            break
+
+    return (filename, line_content_on(view, cursor), nearest_match)
+
+
+def line_content_on(view: sublime.View, pt: int) -> str:
+    return view.substr(view.line(pt))
 
 
 class fif_addon_change_context_lines(sublime_plugin.TextCommand):
@@ -97,13 +130,44 @@ def fix_leading_newlines(view):
     view.run_command("right_delete")
 
 
-def restore_previous_cursor(view, row_offset, col):
+def restore_previous_cursor(view, row_offset, col, position_description=None):
     try:
         last_search_start = view.find_all(r"^Searching \d+ files")[-1]
     except IndexError:
         return
-    top_row_now, _ = view.rowcol(last_search_start.a)
-    next_row = top_row_now + row_offset
+
+    if position_description:
+        best_line = last_search_start
+
+        filename, exact_line_content, nearest_match_line_content = position_description
+        if filename:
+            try:
+                best_line = next(
+                    r
+                    for r in reversed(view.find_by_selector("entity.name.filename.find-in-files"))
+                    if r.a > best_line.a
+                    if line_content_on(view, r.a) == filename
+                )
+            except StopIteration:
+                pass
+
+        try:
+            best_line = next(
+                r
+                for line in (exact_line_content, nearest_match_line_content)
+                if line
+                for r in view.find_all(line, sublime.LITERAL)
+                if r.a > best_line.a
+                if line_content_on(view, r.a) == line
+            )
+        except StopIteration:
+            pass
+
+        next_row, _ = view.rowcol(best_line.a)
+
+    else:
+        top_row_now, _ = view.rowcol(last_search_start.a)
+        next_row = top_row_now + row_offset
     cursor_now = view.text_point(next_row, col)
     view.run_command("fif_addon_set_cursor", {"cursor": cursor_now})
 
