@@ -28,7 +28,8 @@ bottom of the window), the tab moves with you so that closing the tab (aka
 
 7. Re-bind `ctrl+shift+f` to immediately do the search **if** you have exactly
 one selection. Exclude untitled buffers in that case.  (You can turn this off
-by setting `"leave_my_keys_alone": true` in the your user preferences.)
+by setting `"leave_my_keys_alone.FindInFiles-addon": true` in the user
+preferences.)
 
 [1] You know, the result buffer can be re-used and then holds the results of
 multiple searches.
