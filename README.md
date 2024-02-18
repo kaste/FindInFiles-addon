@@ -18,9 +18,9 @@ stays in the same search. [1]
 maybe we can change that and redo the search the cursor is currently in. But
 for now it is the _last_ search in the buffer.
 
-5. Bind `+` and `-` to change the context lines.  Assuming that you by default
-show the result with some context lines, hitting `-` repeatedly will toggle
-between no context and your default.
+5. Bind `+` and `-` to change the number of context lines.  For ease of use,
+hit `-` repeatedly as a toggle between no context and your default, or if your
+default _is_ no context between that and some context.
 
 6. If you reuse the result buffer (and it is a tab, not the panel thing at the
 bottom of the window), the tab moves with you so that closing the tab (aka
