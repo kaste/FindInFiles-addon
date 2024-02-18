@@ -105,9 +105,9 @@ class ContextLineInjector(sublime_plugin.EventListener):
             else:
                 current = self.user_setting
 
-            if current == 0:
+            if current == 0 and self.user_setting != 0:
                 next_state = self.user_setting
-            elif args.get("more"):
+            elif current == 0 or args.get("more"):
                 next_state = current + 2
             elif current == self.user_setting:
                 next_state = 0
