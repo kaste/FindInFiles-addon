@@ -24,7 +24,7 @@ default _is_ no context between that and some context.
 
 6. If you reuse the result buffer (and it is a tab, not the panel thing at the
 bottom of the window), the tab moves with you so that closing the tab (aka
-`ctrl+w`) brings you to the view where youy initiated the search.
+`ctrl+w`) brings you to the view where you initiated the search.
 
 7. Re-bind `ctrl+shift+f` to immediately do the search **if** you have exactly
 one selection. Exclude untitled buffers in that case.  (You can turn this off
