@@ -336,8 +336,9 @@ class fif_addon_goto(sublime_plugin.TextCommand):
         window = view.window()
         assert window
 
-        r, c = view.rowcol(caret(view))
-        column_offset = _column_offset(view)
+        cursor = caret(view)
+        _, c = view.rowcol(cursor)
+        column_offset = column_offset_at(view, cursor)
         col = max(0, c - column_offset)
         s = view.sel()[0]
         count_line_breaks = len(view.lines(s)) - 1
@@ -398,8 +399,8 @@ def caret(view: sublime.View) -> int:
     return view.sel()[0].b
 
 
-def _column_offset(view: sublime.View) -> int:
-    line_region = view.line(caret(view))
+def column_offset_at(view: sublime.View, pt: int) -> int:
+    line_region = view.line(pt)
     for r, scope in view.extract_tokens_with_scopes(line_region):
         if "constant.numeric.line-number." in scope:
             return r.b + 2 - line_region.a  # 2 spaces or `: `
