@@ -118,6 +118,8 @@ def read_position(view: sublime.View):
 
     nearest_match = None
     for r in reversed(view.get_regions("match")):
+        if r.a < last_search_start.a:
+            break
         if r.a < cursor:
             nearest_match = line_content_at(view, r.a)
             break
