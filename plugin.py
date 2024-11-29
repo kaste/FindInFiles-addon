@@ -9,10 +9,14 @@ import traceback
 import sublime
 import sublime_plugin
 
-from typing import Callable, DefaultDict, Dict, Iterable, List, Optional, Tuple, TypeVar, Union
+from typing import (
+    Callable, DefaultDict, Dict, Iterable, Iterator, List,
+    Optional, Tuple, TypeVar, Union,
+)
 T = TypeVar("T")
 Callback = Callable[[sublime.View], None]
 
+filter_: Callable[[Iterable[Optional[T]]], Iterator[T]] = partial(filter, None)
 
 SEARCH_INFO_RE = re.compile(r'(?:"(?P<pattern>.+)")(?: \((?P<flags>.+)\))?')
 FLAG_TRANSLATIONS = {
@@ -124,7 +128,7 @@ def read_position(view: sublime.View):
             nearest_match = line_content_at(view, r.a)
             break
 
-    return (filename, line_content_at(view, cursor), nearest_match)
+    return (filename, list(filter_((line_content_at(view, cursor), nearest_match))))
 
 
 def line_content_at(view: sublime.View, pt: int) -> str:
@@ -201,7 +205,7 @@ def restore_previous_cursor(view: sublime.View, row_offset, col, position_descri
         return
 
     start, end = last_search_start.a, view.size()
-    filename, exact_line_content, nearest_match_line_content = position_description
+    filename, line_candidates = position_description
     if filename:
         try:
             start, end = next(
@@ -219,8 +223,7 @@ def restore_previous_cursor(view: sublime.View, row_offset, col, position_descri
     try:
         start = next(
             r.a
-            for line in (exact_line_content, nearest_match_line_content)
-            if line
+            for line in line_candidates
             for r in view.find_all(line, sublime.LITERAL)
             if start < r.a < end
             if line_content_at(view, r.a) == line
