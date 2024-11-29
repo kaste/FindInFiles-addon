@@ -10,6 +10,14 @@ from typing import Callable, DefaultDict, Dict, List, Optional, Tuple, Union
 Callback = Callable[[sublime.View], None]
 
 
+SEARCH_INFO_RE = re.compile(r'(?:"(?P<pattern>.+)")(?: \((?P<flags>.+)\))?')
+FLAG_TRANSLATIONS = {
+    "regex": "regex",
+    "case sensitive": "case_sensitive",
+    "whole word": "whole_word"
+}
+
+
 class fif_addon_refresh_last_search(sublime_plugin.TextCommand):
     """Delete last search result and do the search again
 
@@ -22,6 +30,21 @@ class fif_addon_refresh_last_search(sublime_plugin.TextCommand):
         except IndexError:
             return
 
+        search_info = view.substr(view.line(last_search_start.a))
+        if (match := SEARCH_INFO_RE.search(search_info)):
+            used_flags = set(
+                FLAG_TRANSLATIONS[user_friendly_flag]
+                for user_friendly_flag in flags.split(", ")
+            ) if (flags := match.group("flags")) else {}
+            options = {
+                "pattern": match.group("pattern"),
+                **{
+                    flag: flag in used_flags
+                    for flag in {"case_sensitive", "regex", "whole_word"}
+                }
+            }
+        else:
+            options = {}
         cursor = view.sel()[0].a
         row, col = view.rowcol(cursor)
         top_row, _ = view.rowcol(last_search_start.a)
@@ -38,7 +61,7 @@ class fif_addon_refresh_last_search(sublime_plugin.TextCommand):
         assert window  # we're a TextCommand on the UI thread!
         window.run_command("chain", {
             "commands": [
-                ["show_panel", {"panel": "find_in_files"}],
+                ["show_panel", {"panel": "find_in_files", **options}],
                 ["find_all"],
             ]
         })
