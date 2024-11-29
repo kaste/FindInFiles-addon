@@ -68,7 +68,7 @@ def read_position(view: sublime.View):
         if r.a < last_search_start.a:
             break
         if r.a < cursor:
-            filename = line_content_on(view, r.a)
+            filename = view.substr(r)
             break
 
     nearest_match = None
@@ -146,7 +146,7 @@ def restore_previous_cursor(view, row_offset, col, position_description=None):
                     r
                     for r in reversed(view.find_by_selector("entity.name.filename.find-in-files"))
                     if r.a > best_line.a
-                    if line_content_on(view, r.a) == filename
+                    if view.substr(r) == filename
                 )
             except StopIteration:
                 pass
