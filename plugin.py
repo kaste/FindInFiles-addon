@@ -205,7 +205,7 @@ def on_next_modification(view: sublime.View, fn: Callback) -> None:
     _on_next_modification[view].append(fn)
 
 
-regex = re.compile(r"\d+ match(es)? .*")
+SEARCH_SUMMARY_RE = re.compile(r"\d+ match(es)? .*")
 
 
 class fif_addon_wait_for_search_to_be_done_listener(sublime_plugin.EventListener):
@@ -218,7 +218,7 @@ class fif_addon_wait_for_search_to_be_done_listener(sublime_plugin.EventListener
             run_handlers(view, _on_next_modification)
 
             text = view.substr(view.line(view.size() - 1))
-            if regex.search(text) is None:
+            if SEARCH_SUMMARY_RE.search(text) is None:
                 return
 
             update_searching_headline(view, text)
