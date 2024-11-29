@@ -1,13 +1,16 @@
+from __future__ import annotations
 from collections import defaultdict
 from contextlib import contextmanager
 from functools import partial
+from itertools import chain, tee
 import re
 import traceback
 
 import sublime
 import sublime_plugin
 
-from typing import Callable, DefaultDict, Dict, List, Optional, Tuple, Union
+from typing import Callable, DefaultDict, Dict, Iterable, List, Optional, Tuple, TypeVar, Union
+T = TypeVar("T")
 Callback = Callable[[sublime.View], None]
 
 
@@ -189,38 +192,41 @@ def check_if_result_changed(view, previous_result):
         window.status_message("Search result already up-to-date.")
 
 
-def restore_previous_cursor(view, row_offset, col, position_description):
+def restore_previous_cursor(view: sublime.View, row_offset, col, position_description):
     try:
         last_search_start = view.find_all(r"^Searching \d+ files")[-1]
     except IndexError:
         return
 
-    best_line = last_search_start
+    start, end = last_search_start.a, view.size()
     filename, exact_line_content, nearest_match_line_content = position_description
     if filename:
         try:
-            best_line = next(
-                r
-                for r in reversed(view.find_by_selector("entity.name.filename.find-in-files"))
-                if r.a > best_line.a
+            start, end = next(
+                (r.a, p.a)
+                for p, r in pairwise(chain(
+                    [sublime.Region(view.size())],
+                    reversed(view.find_by_selector("entity.name.filename.find-in-files"))
+                ))
+                if start < r.a < end
                 if view.substr(r) == filename
             )
         except StopIteration:
             pass
 
     try:
-        best_line = next(
-            r
+        start = next(
+            r.a
             for line in (exact_line_content, nearest_match_line_content)
             if line
             for r in view.find_all(line, sublime.LITERAL)
-            if r.a > best_line.a
+            if start < r.a < end
             if line_content_at(view, r.a) == line
         )
     except StopIteration:
         pass
 
-    next_row, _ = view.rowcol(best_line.a)
+    next_row, _ = view.rowcol(start)
     cursor_now = view.text_point(next_row, col)
     view.run_command("fif_addon_set_cursor", {"cursor": cursor_now, "offset": row_offset})
 
@@ -469,3 +475,10 @@ def set_sel(view: sublime.View, selection: List[sublime.Region]) -> None:
     sel = view.sel()
     sel.clear()
     sel.add_all(selection)
+
+
+def pairwise(iterable: Iterable[T]) -> Iterable[tuple[T, T]]:
+    "s -> (s0,s1), (s1,s2), (s2, s3), ..."
+    a, b = tee(iterable)
+    next(b, None)
+    return zip(a, b)
