@@ -74,14 +74,16 @@ def read_position(view: sublime.View):
     nearest_match = None
     for r in reversed(view.get_regions("match")):
         if r.a < cursor:
-            nearest_match = line_content_on(view, r.a)
+            nearest_match = line_content_at(view, r.a)
             break
 
-    return (filename, line_content_on(view, cursor), nearest_match)
+    return (filename, line_content_at(view, cursor), nearest_match)
 
 
-def line_content_on(view: sublime.View, pt: int) -> str:
-    return view.substr(view.line(pt))
+def line_content_at(view: sublime.View, pt: int) -> str:
+    line_region = view.line(pt)
+    offset = column_offset_at(view, pt)
+    return view.substr(sublime.Region(line_region.a + offset, line_region.b))
 
 
 class fif_addon_change_context_lines(sublime_plugin.TextCommand):
@@ -158,7 +160,7 @@ def restore_previous_cursor(view, row_offset, col, position_description=None):
                 if line
                 for r in view.find_all(line, sublime.LITERAL)
                 if r.a > best_line.a
-                if line_content_on(view, r.a) == line
+                if line_content_at(view, r.a) == line
             )
         except StopIteration:
             pass
