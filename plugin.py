@@ -31,7 +31,8 @@ class fif_addon_refresh_last_search(sublime_plugin.TextCommand):
         except IndexError:
             return
 
-        search_info = view.substr(view.line(last_search_start.a))
+        search_headline_span = view.line(last_search_start.a)
+        search_info = view.substr(search_headline_span)
         if (match := SEARCH_INFO_RE.search(search_info)):
             used_flags = set(
                 FLAG_TRANSLATIONS[user_friendly_flag]
@@ -46,6 +47,7 @@ class fif_addon_refresh_last_search(sublime_plugin.TextCommand):
             }
         else:
             options = {}
+        previous_result = view.substr(sublime.Region(search_headline_span.b, view.size()))
         cursor = view.sel()[0].a
         offset = y_offset(view, cursor)
         row, col = view.rowcol(cursor)
@@ -78,6 +80,8 @@ class fif_addon_refresh_last_search(sublime_plugin.TextCommand):
                 position_description=position
             )
             on_search_finished(view, restore_previous_cursor_)
+
+        on_search_finished(view, partial(check_if_result_changed, previous_result=previous_result))
 
 
 def y_offset(view, cursor):
@@ -168,6 +172,21 @@ def fix_leading_newlines(view):
     set_sel(view, [sublime.Region(0)])
     view.run_command("right_delete")
     view.run_command("right_delete")
+
+
+def check_if_result_changed(view, previous_result):
+    window = view.window()
+    if not window:
+        return
+    try:
+        last_search_start = view.find_all(r"^Searching \d+ files")[-1]
+    except IndexError:
+        return
+
+    search_headline_span = view.line(last_search_start.a)
+    this_result = view.substr(sublime.Region(search_headline_span.b, view.size()))
+    if this_result == previous_result:
+        window.status_message("Search result already up-to-date.")
 
 
 def restore_previous_cursor(view, row_offset, col, position_description):
