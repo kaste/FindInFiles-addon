@@ -46,6 +46,7 @@ class fif_addon_refresh_last_search(sublime_plugin.TextCommand):
         else:
             options = {}
         cursor = view.sel()[0].a
+        offset = y_offset(view, cursor)
         row, col = view.rowcol(cursor)
         top_row, _ = view.rowcol(last_search_start.a)
         position = read_position(view)
@@ -71,10 +72,25 @@ class fif_addon_refresh_last_search(sublime_plugin.TextCommand):
         if row > top_row:
             restore_previous_cursor_ = partial(
                 restore_previous_cursor,
+                row_offset=offset,
                 col=col,
                 position_description=position
             )
             on_search_finished(view, restore_previous_cursor_)
+
+
+def y_offset(view, cursor):
+    # type: (sublime.View, int) -> float
+    _, cy = view.text_to_layout(cursor)
+    _, vy = view.viewport_position()
+    return cy - vy
+
+
+def apply_offset(view: sublime.View, cursor: int, offset: float) -> None:
+    _, cy = view.text_to_layout(cursor)
+    vy = cy - offset
+    vx, _ = view.viewport_position()
+    view.set_viewport_position((vx, vy), animate=False)
 
 
 def read_position(view: sublime.View):
@@ -153,7 +169,7 @@ def fix_leading_newlines(view):
     view.run_command("right_delete")
 
 
-def restore_previous_cursor(view, col, position_description):
+def restore_previous_cursor(view, row_offset, col, position_description):
     try:
         last_search_start = view.find_all(r"^Searching \d+ files")[-1]
     except IndexError:
@@ -186,13 +202,13 @@ def restore_previous_cursor(view, col, position_description):
 
     next_row, _ = view.rowcol(best_line.a)
     cursor_now = view.text_point(next_row, col)
-    view.run_command("fif_addon_set_cursor", {"cursor": cursor_now})
+    view.run_command("fif_addon_set_cursor", {"cursor": cursor_now, "offset": row_offset})
 
 
 class fif_addon_set_cursor(sublime_plugin.TextCommand):
-    def run(self, edit, cursor):
+    def run(self, edit, cursor, offset):
         set_sel(self.view, [sublime.Region(cursor)])
-        self.view.show(cursor)
+        apply_offset(self.view, cursor, offset)
 
 
 class fif_addon_replace_text(sublime_plugin.TextCommand):
