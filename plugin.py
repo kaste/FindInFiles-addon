@@ -2,6 +2,7 @@ from collections import defaultdict
 from contextlib import contextmanager
 from functools import partial
 import re
+import traceback
 
 import sublime
 import sublime_plugin
@@ -418,7 +419,11 @@ def run_handlers(view, storage: Dict[sublime.View, List[Callback]]):
         return
 
     for fn in fns:
-        sublime.set_timeout(lambda: fn(view))
+        try:
+            fn(view)
+        except Exception:
+            traceback.print_exc()
+
 
 
 @contextmanager
