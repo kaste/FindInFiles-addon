@@ -99,7 +99,7 @@ class fif_addon_refresh_last_search(sublime_plugin.TextCommand):
         })
 
         if last_search_output_span.a == 0:
-            on_next_modification(view, fix_leading_newlines)
+            on_search_finished(view, fix_leading_newlines)
 
         if row > top_row:
             restore_previous_cursor_ = partial(
@@ -284,19 +284,12 @@ def replace_view_content(view, text, region: Union[int, sublime.Region]) -> None
     view.run_command("fif_addon_replace_text", {"text": text, "region": region_})
 
 
+SEARCH_SUMMARY_RE = re.compile(r"\d+ match(es)? .*")
 _on_search_finished: DefaultDict[sublime.View, List[Callback]] = defaultdict(list)
-_on_next_modification: DefaultDict[sublime.View, List[Callback]] = defaultdict(list)
 
 
 def on_search_finished(view: sublime.View, fn: Callback) -> None:
     _on_search_finished[view].append(fn)
-
-
-def on_next_modification(view: sublime.View, fn: Callback) -> None:
-    _on_next_modification[view].append(fn)
-
-
-SEARCH_SUMMARY_RE = re.compile(r"\d+ match(es)? .*")
 
 
 class fif_addon_wait_for_search_to_be_done_listener(sublime_plugin.EventListener):
@@ -306,8 +299,6 @@ class fif_addon_wait_for_search_to_be_done_listener(sublime_plugin.EventListener
 
     def on_modified(self, view):
         if self.is_applicable(view):
-            run_handlers(view, _on_next_modification)
-
             text = view.substr(view.line(view.size() - 1))
             if SEARCH_SUMMARY_RE.search(text) is None:
                 return
