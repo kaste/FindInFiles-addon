@@ -120,21 +120,27 @@ def read_position(view: sublime.View):
             filename = view.substr(r)
             break
 
-    nearest_match = None
+
+    full_line = full_line_content_at(view, cursor)
+    line_candidates = [full_line]
+    if (offset := column_offset_at(view, cursor)):
+        line_candidates.append(full_line[offset:])
+
     for r in reversed(view.get_regions("match")):
         if r.a < last_search_start.a:
             break
         if r.a < cursor:
-            nearest_match = line_content_at(view, r.a)
+            nearest_match = full_line_content_at(view, r.a)
+            line_candidates.append(nearest_match)
+            if (offset := column_offset_at(view, r.a)):
+                line_candidates.append(nearest_match[offset:])
             break
 
-    return (filename, list(filter_((line_content_at(view, cursor), nearest_match))))
+    return (filename, list(filter_(line_candidates)))
 
 
-def line_content_at(view: sublime.View, pt: int) -> str:
-    line_region = view.line(pt)
-    offset = column_offset_at(view, pt)
-    return view.substr(sublime.Region(line_region.a + offset, line_region.b))
+def full_line_content_at(view: sublime.View, pt: int) -> str:
+    return view.substr(view.full_line(pt))
 
 
 class fif_addon_change_context_lines(sublime_plugin.TextCommand):
@@ -226,7 +232,7 @@ def restore_previous_cursor(view: sublime.View, row_offset, col, position_descri
             for line in line_candidates
             for r in view.find_all(line, sublime.LITERAL)
             if start < r.a < end
-            if line_content_at(view, r.a) == line
+            if full_line_content_at(view, r.a).endswith(line)
         )
     except StopIteration:
         pass
