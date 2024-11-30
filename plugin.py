@@ -26,6 +26,28 @@ FLAG_TRANSLATIONS = {
 }
 
 
+class fif_addon_quick_search(sublime_plugin.TextCommand):
+    """Initiate Find in Files directly from the current selection
+
+    Set `whole_word` depending on whether you have selected a word
+    """
+    def run(self, edit):
+        view = self.view
+        sel = view.sel()[0]
+
+        window = view.window()
+        assert window
+        window.run_command("show_panel", {
+            "panel": "find_in_files",
+            "where": "-<untitled*",
+            "regex": False,
+            "case_sensitive": False,
+            "whole_word": view.word(sel) == sel
+        })
+        window.run_command("find_all")
+        window.run_command("focus_panel", {"name": "find_results"})
+
+
 class fif_addon_refresh_last_search(sublime_plugin.TextCommand):
     """Delete last search result and do the search again
 

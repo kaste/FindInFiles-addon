@@ -21,14 +21,7 @@
     // If there is a selection, do the "find-in-files" without further questions
     {
         "keys": ["primary+shift+f"],
-        "command": "chain",
-        "args": {
-            "commands": [
-                ["show_panel", { "panel": "find_in_files", "where": "-<untitled*" }],
-                ["find_all"],
-                ["focus_panel", { "name": "find_results" }]
-            ]
-        },
+        "command": "fif_addon_quick_search",
         "context": [
             { "key": "num_selections", "operator": "equal", "operand": 1 },
             { "key": "selection_empty", "operator": "not_equal" },
