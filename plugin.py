@@ -138,7 +138,7 @@ def read_position(view: sublime.View):
     for r in reversed(view.find_by_selector("entity.name.filename.find-in-files")):
         if r.a < last_search_start.a:
             break
-        if r.a < cursor:
+        if r.a <= cursor:
             filename = view.substr(r)
             break
 
@@ -152,7 +152,7 @@ def read_position(view: sublime.View):
     for r in reversed(view.get_regions("match")):
         if r.a < last_search_start.a:
             break
-        if r.a < cursor:
+        if r.a <= cursor:
             nearest_match = full_line_content_at(view, r.a)
             line_candidates.append(nearest_match)
             if (offset := column_offset_at(view, r.a)):
@@ -243,7 +243,7 @@ def restore_previous_cursor(view: sublime.View, row_offset, col, position_descri
                     [sublime.Region(view.size())],
                     reversed(view.find_by_selector("entity.name.filename.find-in-files"))
                 ))
-                if start < r.a < end
+                if start <= r.a < end
                 if view.substr(r) == filename
             )
         except StopIteration:
@@ -254,7 +254,7 @@ def restore_previous_cursor(view: sublime.View, row_offset, col, position_descri
             r.a
             for line in line_candidates
             for r in view.find_all(line, sublime.LITERAL)
-            if start < r.a < end
+            if start <= r.a < end
             if full_line_content_at(view, r.a).endswith(line)
         )
     except StopIteration:
