@@ -142,11 +142,12 @@ def read_position(view: sublime.View):
             filename = view.substr(r)
             break
 
-
+    line_candidates = []
     full_line = full_line_content_at(view, cursor)
-    line_candidates = [full_line]
-    if (offset := column_offset_at(view, cursor)):
-        line_candidates.append(full_line[offset:])
+    if full_line.strip():
+        line_candidates.append(full_line)
+        if (offset := column_offset_at(view, cursor)):
+            line_candidates.append(full_line[offset:])
 
     for r in reversed(view.get_regions("match")):
         if r.a < last_search_start.a:
