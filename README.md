@@ -18,15 +18,21 @@ stays in the same search. [1]
 maybe we can change that and redo the search the cursor is currently in. But
 for now it is the _last_ search in the buffer.
 
-5. Bind `+` and `-` to change the number of context lines.  For ease of use,
+5. Bind `alt+c` to toggle case sensitivity, `alt-w` to toggle the whole word
+flag and redo the search immediately.
+
+6. Bind `alt+r` to toggle regex mode.  The pattern will be escaped/unescaped
+and the panel will open to edit the pattern further.
+
+7. Bind `+` and `-` to change the number of context lines.  For ease of use,
 hit `-` repeatedly as a toggle between no context and your default, or if your
 default _is_ no context between that and some context.
 
-6. If you reuse the result buffer (and it is a tab, not the panel thing at the
+8. If you reuse the result buffer (and it is a tab, not the panel thing at the
 bottom of the window), the tab moves with you so that closing the tab (aka
 `ctrl+w`) brings you to the view where you initiated the search.
 
-7. Re-bind `ctrl+shift+f` to immediately do the search **if** you have exactly
+9. Re-bind `ctrl+shift+f` to immediately do the search **if** you have exactly
 one selection. Exclude untitled buffers in that case.  (You can turn this off
 by setting `"leave_my_keys_alone.FindInFiles-addon": true` in the user
 preferences.)  Sets "whole_word" if you've selected a whole word, unsets it

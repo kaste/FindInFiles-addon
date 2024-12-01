@@ -51,9 +51,19 @@ class fif_addon_quick_search(sublime_plugin.TextCommand):
 class fif_addon_refresh_last_search(sublime_plugin.TextCommand):
     """Delete last search result and do the search again
 
-    This should look like a in-place refresh typically bound to `[F5]`
+    This should look like a in-place refresh typically bound to `[F5]`.  The
+    "toggle_*" arguments can be used to toggle these flags and immediately
+    refresh the search result.  If `pause` is set, only the panel will open
+    prefilled with the values from the previous search.
     """
-    def run(self, edit):
+    def run(
+        self,
+        edit,
+        toggle_case_sensitive=False,
+        toggle_regex=False,
+        toggle_whole_word=False,
+        pause=False
+    ):
         view = self.view
         try:
             last_search_start = view.find_all(r"^Searching \d+ files")[-1]
@@ -70,10 +80,19 @@ class fif_addon_refresh_last_search(sublime_plugin.TextCommand):
             options = {
                 "pattern": match.group("pattern"),
                 **{
-                    flag: flag in used_flags
-                    for flag in {"case_sensitive", "regex", "whole_word"}
+                    flag: (flag not in used_flags) if toggle else (flag in used_flags)
+                    for flag, toggle in {
+                        ("case_sensitive", toggle_case_sensitive),
+                        ("regex", toggle_regex),
+                        ("whole_word", toggle_whole_word)
+                    }
                 }
             }
+            if toggle_regex:
+                if options["regex"]:
+                    options["pattern"] = re.escape(options["pattern"])  # type: ignore[type-var]
+                else:
+                    options["pattern"] = re.sub(r"\\(.)", r"\1", options["pattern"])  # type: ignore[arg-type]
         else:
             options = {}
 
@@ -83,6 +102,8 @@ class fif_addon_refresh_last_search(sublime_plugin.TextCommand):
             "panel": "find_in_files",
             **options
         })
+        if pause:
+            return
 
         previous_result = view.substr(sublime.Region(search_headline_span.b, view.size()))
         cursor = view.sel()[0].a
