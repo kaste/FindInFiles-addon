@@ -76,27 +76,27 @@ class fif_addon_refresh_last_search(sublime_plugin.TextCommand):
             }
         else:
             options = {}
+
+        window = view.window()
+        assert window  # we're a TextCommand on the UI thread!
+        window.run_command("show_panel", {
+            "panel": "find_in_files",
+            **options
+        })
+
         previous_result = view.substr(sublime.Region(search_headline_span.b, view.size()))
         cursor = view.sel()[0].a
         offset = y_offset(view, cursor)
         row, col = view.rowcol(cursor)
         top_row, _ = view.rowcol(last_search_start.a)
         position = read_position(view)
-
         last_search_output_span = sublime.Region(
             max(0, last_search_start.a - 2),  # "-2" => also delete two preceding newlines
             view.size()
         )
-        view.replace(edit, last_search_output_span, "")
 
-        window = view.window()
-        assert window  # we're a TextCommand on the UI thread!
-        window.run_command("chain", {
-            "commands": [
-                ["show_panel", {"panel": "find_in_files", **options}],
-                ["find_all"],
-            ]
-        })
+        view.replace(edit, last_search_output_span, "")
+        window.run_command("find_all")
 
         if last_search_output_span.a == 0:
             on_search_finished(view, fix_leading_newlines)
