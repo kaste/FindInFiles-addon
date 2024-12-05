@@ -32,7 +32,10 @@ default _is_ no context between that and some context.
 bottom of the window), the tab moves with you so that closing the tab (aka
 `ctrl+w`) brings you to the view where you initiated the search.
 
-9. Re-bind `ctrl+shift+f` to immediately do the search **if** you have exactly
+9. Add the search summary (e.g. "2 matches across 2 files") to the search
+header line ("Searching 9 files for ...")
+
+10. Re-bind `ctrl+shift+f` to immediately do the search **if** you have exactly
 one selection. Exclude untitled buffers in that case.  (You can turn this off
 by setting `"leave_my_keys_alone.FindInFiles-addon": true` in the user
 preferences.)  Sets "whole_word" if you've selected a whole word, unsets it
