@@ -1,0 +1,20 @@
+[
+    {
+        "keys": ["alt+c"],
+        "command": "fif_addon_refresh_last_search",
+        "args": {"toggle_case_sensitive": true},
+        "context": [{ "key": "selector", "operand": "text.find-in-files" }]
+    },
+    {
+        "keys": ["alt+r"],
+        "command": "fif_addon_refresh_last_search",
+        "args": {"toggle_regex": true, "pause": true},
+        "context": [{ "key": "selector", "operand": "text.find-in-files" }]
+    },
+    {
+        "keys": ["alt+w"],
+        "command": "fif_addon_refresh_last_search",
+        "args": {"toggle_whole_word": true},
+        "context": [{ "key": "selector", "operand": "text.find-in-files" }]
+    },
+]

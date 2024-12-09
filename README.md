@@ -18,7 +18,7 @@ stays in the same search. [1]
 maybe we can change that and redo the search the cursor is currently in. But
 for now it is the _last_ search in the buffer.
 
-5. Bind `alt+c` to toggle case sensitivity, `alt-w` to toggle the whole word
+5. Bind `alt+c`[2] to toggle case sensitivity, `alt-w` to toggle the whole word
 flag and redo the search immediately.
 
 6. Bind `alt+r` to toggle regex mode.  The pattern will be escaped/unescaped
@@ -44,3 +44,5 @@ if that's not the case.  Also normalizes `case_sensitive` and `regex` to
 
 [1] You know, the result buffer can be re-used and then holds the results of
 multiple searches.
+
+[2] On Mac, the standard `super+alt` modifier is used.
