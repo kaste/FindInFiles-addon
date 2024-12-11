@@ -1,6 +1,6 @@
 [
     {
-        "keys": ["f5"],
+        "keys": ["primary+r"],
         "command": "fif_addon_refresh_last_search",
         "context": [{ "key": "selector", "operand": "text.find-in-files" }]
     },
