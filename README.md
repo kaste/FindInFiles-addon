@@ -48,3 +48,25 @@ multiple searches.
 [2] On Linux and Windows, `F5` can be used as well.
 
 [3] On Mac, the standard `super+alt` modifier is used.
+
+
+I personally like it when `escape` closes the results view.  You can add that
+to your own key bindings.  E.g.
+
+```
+    {
+        "keys": ["escape"],
+        "command": "close",
+        "context": [
+            { "key": "selector", "operand": "text.find-in-files" },
+            // negate all default escape contexts, even if they're not likely to ever match
+            { "key": "auto_complete_visible", "operator": "not_equal" },
+            { "key": "has_prev_field", "operator": "not_equal" },
+            { "key": "has_next_field", "operator": "not_equal" },
+            { "key": "num_selections", "operator": "equal", "operand": 1 },
+            { "key": "overlay_visible", "operator": "not_equal" },
+            { "key": "panel_visible", "operator": "not_equal" },
+            { "key": "popup_visible", "operator": "not_equal" },
+        ]
+    }
+```
