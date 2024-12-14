@@ -118,8 +118,10 @@ class fif_addon_refresh_last_search(sublime_plugin.TextCommand):
 
         view.replace(edit, last_search_output_span, "")
         window.run_command("find_all")
+        window.run_command("focus_panel", {"name": "find_results"})
 
-        if last_search_output_span.a == 0:
+        is_result_buffer = view in window.views()
+        if last_search_output_span.a == 0 and is_result_buffer:
             on_search_finished(view, fix_leading_newlines)
 
         if row > top_row:
@@ -325,7 +327,13 @@ class fif_addon_wait_for_search_to_be_done_listener(sublime_plugin.EventListener
                 return
 
             update_searching_headline(view, text)
-            run_handlers(view, _on_search_finished)
+
+            window = view.window()
+            is_result_buffer = view in window.views()
+            if is_result_buffer:
+                run_handlers(view, _on_search_finished)
+            else:
+                sublime.set_timeout(lambda: run_handlers(view, _on_search_finished))
 
 
 def update_searching_headline(view, text):
