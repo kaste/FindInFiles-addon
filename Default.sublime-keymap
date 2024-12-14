@@ -22,6 +22,7 @@
     {
         "keys": ["primary+shift+f"],
         "command": "fif_addon_quick_search",
+        "args": {"where": "-<untitled*"},
         "context": [
             { "key": "num_selections", "operator": "equal", "operand": 1 },
             { "key": "selection_empty", "operator": "not_equal" },

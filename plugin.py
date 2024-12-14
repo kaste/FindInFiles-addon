@@ -31,7 +31,7 @@ class fif_addon_quick_search(sublime_plugin.TextCommand):
 
     Set `whole_word` depending on whether you have selected a word
     """
-    def run(self, edit):
+    def run(self, edit, where=None):
         view = self.view
         sel = view.sel()[0]
 
@@ -39,7 +39,7 @@ class fif_addon_quick_search(sublime_plugin.TextCommand):
         assert window
         window.run_command("show_panel", {
             "panel": "find_in_files",
-            "where": "-<untitled*",
+            "where": where,
             "regex": False,
             "case_sensitive": False,
             # if you reverse-select a word that will not enable
