@@ -42,6 +42,9 @@ class fif_addon_quick_search(sublime_plugin.TextCommand):
             "where": "-<untitled*",
             "regex": False,
             "case_sensitive": False,
+            # if you reverse-select a word that will not enable
+            # "whole_word" as `view.word()`'s result is ordered.
+            # Is that a bug or a feature?
             "whole_word": view.word(sel) == sel
         })
         window.run_command("find_all")
