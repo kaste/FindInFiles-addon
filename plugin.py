@@ -117,7 +117,8 @@ class fif_addon_refresh_last_search(sublime_plugin.TextCommand):
         )
 
         view.replace(edit, last_search_output_span, "")
-        window.run_command("find_all")
+        with modified_context_lines_setting(view):
+            window.run_command("find_all")
         window.run_command("focus_panel", {"name": "find_results"})
 
         is_result_buffer = view in window.views()
@@ -191,41 +192,62 @@ def full_line_content_at(view: sublime.View, pt: int) -> str:
 
 class fif_addon_change_context_lines(sublime_plugin.TextCommand):
     def run(self, edit, more=False):
-        self.view.run_command("fif_addon_refresh_last_search")
+        view = self.view
+        settings = sublime.load_settings("Preferences.sublime-settings")
+        user_setting = settings.get("find_in_files_context_lines")
+        if user_setting is None:
+            window = view.window()
+            assert window
+            window.status_message(
+                "error: no default for `find_in_files_context_lines` set in the preferences")
+            print(
+                "error: no default for `find_in_files_context_lines` set in the preferences\n"
+                "That's a bit unfortunate as Sublime ships with a default.  "
+                "Check if your user settings override that."
+            )
+            return
+
+        if view.settings().has("fif_addon_current_context"):
+            current = view.settings().get("fif_addon_current_context")
+        else:
+            current = user_setting
+
+        if current == 0 and user_setting != 0:
+            next_state = user_setting
+        elif current == 0 or more:
+            next_state = current + 2
+        elif current == user_setting:
+            next_state = 0
+        else:
+            next_state = max(0, current - 2)
+        view.settings().set("fif_addon_current_context", next_state)
+
+        view.run_command("fif_addon_refresh_last_search")
 
 
+@contextmanager
+def modified_context_lines_setting(view: sublime.View):
+    settings = sublime.load_settings("Preferences.sublime-settings")
+    user_setting = settings.get("find_in_files_context_lines")
+    temporary_override = view.settings().get("fif_addon_current_context")
+    if user_setting is None or temporary_override is None:
+        yield
+
+    else:
+        settings.set("find_in_files_context_lines", temporary_override)
+        try:
+            yield
+        finally:
+            settings.set("find_in_files_context_lines", user_setting)
+
+
+# 2024-12-14  Keep the old `EventListener` _registered_ for hot-reloading.
+#             Remove when users likely have migrated.
 class ContextLineInjector(sublime_plugin.EventListener):
-    user_setting: Optional[int] = None
-
     def on_text_command(self, view: sublime.View, command_name: str, args: Dict):
-        if command_name == "fif_addon_change_context_lines":
-            settings = sublime.load_settings("Preferences.sublime-settings")
-            if self.user_setting is None:
-                self.user_setting = settings.get("find_in_files_context_lines")
-                if self.user_setting is None:
-                    return
-
-            if view.settings().has("fif_addon_current_context"):
-                current = view.settings().get("fif_addon_current_context")
-            else:
-                current = self.user_setting
-
-            if current == 0 and self.user_setting != 0:
-                next_state = self.user_setting
-            elif current == 0 or args.get("more"):
-                next_state = current + 2
-            elif current == self.user_setting:
-                next_state = 0
-            else:
-                next_state = max(0, current - 2)
-            view.settings().set("fif_addon_current_context", next_state)
-            settings.set("find_in_files_context_lines", next_state)
-
+        ...
     def on_post_text_command(self, view: sublime.View, command_name: str, args: Dict):
-        if command_name == "fif_addon_change_context_lines":
-            settings = sublime.load_settings("Preferences.sublime-settings")
-            if self.user_setting is not None:
-                settings.set("find_in_files_context_lines", self.user_setting)
+        ...
 
 
 def fix_leading_newlines(view):
