@@ -4,7 +4,6 @@ from contextlib import contextmanager
 from functools import partial
 from itertools import chain, tee
 import re
-import traceback
 
 import sublime
 import sublime_plugin
@@ -352,13 +351,7 @@ class fif_addon_wait_for_search_to_be_done_listener(sublime_plugin.EventListener
                 return
 
             update_searching_headline(view, text)
-
-            window = view.window()
-            is_result_buffer = view in window.views()
-            if is_result_buffer:
-                run_handlers(view, _on_search_finished)
-            else:
-                sublime.set_timeout(lambda: run_handlers(view, _on_search_finished))
+            run_handlers(view, _on_search_finished)
 
 
 def update_searching_headline(view, text):
@@ -523,11 +516,7 @@ def run_handlers(view, storage: Dict[sublime.View, List[Callback]]):
         return
 
     for fn in fns:
-        try:
-            fn(view)
-        except Exception:
-            traceback.print_exc()
-
+        sublime.set_timeout(partial(fn, view))
 
 
 @contextmanager
