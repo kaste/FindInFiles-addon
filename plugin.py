@@ -13,7 +13,7 @@ from typing import (
     Optional, Tuple, TypeVar, Union,
 )
 T = TypeVar("T")
-Callback = Callable[[sublime.View], None]
+LoadedCallback = Callable[[sublime.View], None]
 
 filter_: Callable[[Iterable[Optional[T]]], Iterator[T]] = partial(filter, None)
 
@@ -332,10 +332,10 @@ def replace_view_content(view, text, region: Union[int, sublime.Region]) -> None
 
 
 SEARCH_SUMMARY_RE = re.compile(r"\d+ match(es)? .*")
-_on_search_finished: DefaultDict[sublime.View, List[Callback]] = defaultdict(list)
+_on_search_finished: DefaultDict[sublime.View, List[LoadedCallback]] = defaultdict(list)
 
 
-def on_search_finished(view: sublime.View, fn: Callback) -> None:
+def on_search_finished(view: sublime.View, fn: LoadedCallback) -> None:
     _on_search_finished[view].append(fn)
 
 
@@ -493,11 +493,11 @@ class fif_addon_goto(sublime_plugin.TextCommand):
                 when_loaded(view_, carry_selection_to_view)
 
 
-VIEWS_YET_TO_BE_LOADED: DefaultDict[sublime.View, List[Callback]] \
+VIEWS_YET_TO_BE_LOADED: DefaultDict[sublime.View, List[LoadedCallback]] \
     = defaultdict(list)
 
 
-def when_loaded(view: sublime.View, kont: Callback) -> None:
+def when_loaded(view: sublime.View, kont: LoadedCallback) -> None:
     if view.is_loading():
         VIEWS_YET_TO_BE_LOADED[view].append(kont)
     else:
@@ -509,7 +509,7 @@ class fif_addon_await_loading_views(sublime_plugin.EventListener):
         run_handlers(view, VIEWS_YET_TO_BE_LOADED)
 
 
-def run_handlers(view, storage: Dict[sublime.View, List[Callback]]):
+def run_handlers(view, storage: Dict[sublime.View, List[LoadedCallback]]):
     try:
         fns = storage.pop(view)
     except KeyError:
