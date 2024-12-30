@@ -9,7 +9,7 @@ import sublime
 import sublime_plugin
 
 from typing import (
-    Callable, DefaultDict, Dict, Iterable, Iterator, List,
+    Callable, DefaultDict, Dict, Iterable, Iterator, List, Literal,
     Optional, Tuple, TypeVar, Union,
 )
 T = TypeVar("T")
@@ -442,6 +442,8 @@ class fif_addon_next_match(sublime_plugin.TextCommand):
                 if r.begin() > caret:
                     set_sel(view, [r])
                     view.show(r, True)
+                    if preview_is_open(view):
+                        view.run_command("fif_addon_goto", {"preview": True})
                     return
 
 
@@ -458,17 +460,30 @@ class fif_addon_prev_match(sublime_plugin.TextCommand):
                 if r.end() < caret:
                     set_sel(view, [r])
                     view.show(r, True)
+                    if preview_is_open(view):
+                        view.run_command("fif_addon_goto", {"preview": True})
                     return
 
 
 class fif_addon_goto(sublime_plugin.TextCommand):
-    def run(self, edit):
+    prev_loc = ("", -1)
+
+    def run(self, edit, preview: bool | Literal["toggle"] = False):
         view = self.view
         window = view.window()
         assert window
 
         cursor = caret(view)
-        _, c = view.rowcol(cursor)
+        r, c = view.rowcol(cursor)
+        prev_loc, self.prev_loc = self.prev_loc, (view.substr(view.line(cursor)), r)
+        if (
+            preview == "toggle"
+            and preview_is_open(view)
+            and prev_loc == self.prev_loc
+        ):
+            close_preview(view)
+            return
+
         column_offset = column_offset_at(view, cursor)
         col = max(0, c - column_offset)
         s = view.sel()[0]
@@ -481,16 +496,82 @@ class fif_addon_goto(sublime_plugin.TextCommand):
 
         with restore_selection(view):
             view.run_command("move_to", {"to": "hardbol"})
-            window.run_command("next_result")
+            if preview:
+                with side_by_side_enabled(view):
+                    window.run_command("next_result")
+                    view_ = window.active_view()
+                    window.focus_view(view)
 
-            view_ = window.active_view()
+            else:
+                if (
+                    preview_is_open(view)
+                    and not find_in_files_side_by_side_is_set()
+                ):
+                    close_preview(view)
 
-            def carry_selection_to_view(view):
-                caret_ = caret(view) + col
-                set_sel(view, [sublime.Region(caret_ - len_s, caret_)])
+                window.run_command("next_result")
+                view_ = window.active_view()
 
             if view_:
-                when_loaded(view_, carry_selection_to_view)
+                def carry_selection_to_view(view):
+                    caret_ = caret(view) + col
+                    set_sel(view, [sublime.Region(caret_ - len_s, caret_)])
+
+                def carry_selection_to_view_deferred(view):
+                    sublime.set_timeout(partial(carry_selection_to_view, view))
+
+                side_effect = (
+                    carry_selection_to_view_deferred
+                    if (sheet_ := view_.sheet()) and sheet_.is_semi_transient()
+                    else carry_selection_to_view
+                )
+                when_loaded(view_, side_effect)
+
+
+def close_preview(view: sublime.View):
+    window = view.window()
+    if not window:
+        return
+
+    group, _ = window.get_view_index(view)
+    selected_sheets = window.selected_sheets_in_group(group)
+    for other_sheet in selected_sheets:
+        if (
+            other_sheet != view.sheet()
+            and other_sheet.is_semi_transient()
+            and (other_view := other_sheet.view())
+        ):
+            other_view.close()
+    window.run_command("unselect_others")
+
+
+@contextmanager
+def side_by_side_enabled(view: sublime.View):
+    settings = sublime.load_settings("Preferences.sublime-settings")
+    user_setting = settings.get("find_in_files_side_by_side")
+    if user_setting in (True, None):
+        yield
+
+    else:
+        settings.set("find_in_files_side_by_side", True)
+        try:
+            yield
+        finally:
+            settings.set("find_in_files_side_by_side", user_setting)
+
+
+def find_in_files_side_by_side_is_set() -> bool:
+    settings = sublime.load_settings("Preferences.sublime-settings")
+    return settings.get("find_in_files_side_by_side")
+
+
+def preview_is_open(view: sublime.View) -> bool:
+    window = view.window()
+    if not window:
+        return False
+    group, _ = window.get_view_index(view)
+    selected_sheets = window.selected_sheets_in_group(group)
+    return len(selected_sheets) == 2 and view.sheet() in selected_sheets
 
 
 VIEWS_YET_TO_BE_LOADED: DefaultDict[sublime.View, List[LoadedCallback]] \
