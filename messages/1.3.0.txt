@@ -1,0 +1,15 @@
+Find-In-Files add-on 1.3.0
+---------------------------
+
+☝️
+
+`ctrl+enter` will now open a preview, side-by-side.  The preview will update
+when you navigate around (using e.g. `,` and `.`).
+
+Both, `enter` and `ctrl+enter` will close the preview.
+
+As there is no side-by-side to a results _panel_, this will only work for result
+buffers.  Also: if you already use the newish "find_in_files_side_by_side" setting,
+there is no real difference as you already opted-in to always use a side-by-side
+view.  (Hint: Turn `find_in_files_side_by_side` off and use the preview feature
+here.)
