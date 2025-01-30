@@ -3,6 +3,7 @@ from collections import defaultdict
 from contextlib import contextmanager
 from functools import partial
 from itertools import chain, tee
+from pathlib import Path
 import re
 
 import sublime
@@ -375,12 +376,14 @@ class fif_addon_listener(sublime_plugin.EventListener):
     handle_modified_events: Dict[sublime.Window, bool] = {}
 
     def is_applicable(self, view):
-        syntax = view.settings().get("syntax")
-        return syntax.endswith("Find Results.hidden-tmLanguage") if syntax else False
+        return view.match_selector(0, "text.find-in-files")
 
     def on_activated_async(self, view):
         if self.is_applicable(view):
             view.settings().set("result_line_regex", "^ +([0-9]+)")
+            this_package_name = Path(__file__).parent.stem
+            syntax_file = f"Packages/{this_package_name}/FindInFiles.sublime-syntax"
+            view.assign_syntax(syntax_file)
 
             current_cc = view.change_count()
             window = view.window()

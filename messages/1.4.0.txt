@@ -1,0 +1,14 @@
+Find-In-Files add-on 1.4.0
+---------------------------
+
+☝️
+
+- Binding `primary+r` to "reload" was a mistake.  That is already used by Goto-Symbol so I
+  had to remove it.  For now, it is `F5` on all platforms instead.  That is natural on
+  Windows and Linux.  If you know a better, standard key-binding on Mac, please let me know.
+
+- In the Find-in-Files view, the filenames are now listed as symbols.  To open the symbols
+  panel use `ctrl+r` on Windows and Linux or `super+r` on macOS.  (I mean: as usual, I
+  don't define any keybindings for these actions here; it's just Sublime's default.)
+
+

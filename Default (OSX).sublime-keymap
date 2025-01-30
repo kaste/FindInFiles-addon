@@ -1,5 +1,11 @@
 [
     {
+        "keys": ["f5"],
+        "command": "fif_addon_refresh_last_search",
+        "context": [{ "key": "selector", "operand": "text.find-in-files" }]
+    },
+
+    {
         "keys": ["super+alt+c"],
         "command": "fif_addon_refresh_last_search",
         "args": {"toggle_case_sensitive": true},

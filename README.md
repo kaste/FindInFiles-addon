@@ -1,15 +1,19 @@
-## Sublime Text - Find in Files hacks
+## Find in Files add-on for Sublime Text
 
-The plugin with the following features:
+This plugin enhances the Find in Files feature of Sublime Text.  It attaches to
+the result buffer automatically and adds the following features:
 
-1. Make all lines in a find-in-files result buffer double-clickable.
+1. Make all lines in a find-in-files result buffer double-clickable.  Bind
+`<enter>` to do the same thing, namely go to that line.  (But also set the column,
+well ... just set the complete selection.)
 
-2. Bind `<enter>` to do the same thing, namely go to that line.  (But also
-set the column, well ... just the complete selection.)
+2. Also, register the filenames as local symbols for quick navigation and outlines.
+Use `ctrl|super+r` (Sublime's default) to open the symbols panel, or however you
+use that in your daily routine.  (E.g. I have a global shortcut to jump from
+symbol to symbol.)
 
 3. Bind `,` and `.` to go to the previous or next match staying in the
-result buffer. Just move the cursor ("navigate") around. Wraps at the edges but
-stays in the same search. [1]
+result buffer. Just move the cursor ("navigate") around.
 
     But you can also bind `fif_addon_prev_match` and `fif_addon_next_match` on
     your own.
@@ -22,19 +26,19 @@ there is no real difference as you already opted-in to always use a side-by-side
 view.  (Hint: Turn `find_in_files_side_by_side` off and use the preview feature
 here.)
 
-5. Bind `ctrl+r`[2] to refresh the view, t.i. redo the _last_ search. Hm, :thinking:,
-maybe we can change that and redo the search the cursor is currently in. But
-for now it is the _last_ search in the buffer.
-
-6. Bind `alt+c`[3] to toggle case sensitivity, `alt-w` to toggle the whole word
-flag and redo the search immediately.
-
-7. Bind `alt+r` to toggle regex mode.  The pattern will be escaped/unescaped
-and the panel will open to edit the pattern further.
-
-8. Bind `+` and `-` to change the number of context lines.  For ease of use,
+5. Bind `+` and `-` to change the number of context lines.  For ease of use,
 hit `-` repeatedly as a toggle between no context and your default, or if your
 default _is_ no context between that and some context.
+
+6. Bind `f5` to refresh the view, t.i. redo the _last_ search. Hm, 🤔, maybe we
+can change that and redo the search the cursor is currently in. But for now it is
+the _last_ search in the buffer.
+
+7. Bind `alt+c`[3] to toggle case sensitivity, `alt-w` to toggle the whole word
+flag and redo the search immediately.
+
+8. Bind `alt+r` to toggle regex mode.  The pattern will be escaped/unescaped
+and the panel will open to edit the pattern further.
 
 9. If you reuse the result buffer (and it is a tab, not the panel thing at the
 bottom of the window), the tab moves with you so that closing the tab (aka
@@ -50,13 +54,21 @@ preferences.)  Sets "whole_word" if you've selected a whole word, unsets it
 if that's not the case.  Also normalizes `case_sensitive` and `regex` to
 `false`.
 
-[1] You know, the result buffer can be re-used and then holds the results of
-multiple searches.
+[1] On Mac, the standard `super+alt` modifier is used.  Generally, these should
+be just the standard bindings, you already use in the Find-panel to toggle the
+switches.
 
-[2] On Linux and Windows, `F5` can be used as well.
 
-[3] On Mac, the standard `super+alt` modifier is used.
+# 1
 
+Registering "local symbols" populates the Goto panel.  I use it in combination
+with the [InlineOutline](https://packagecontrol.io/packages/InlineOutline) plugin,
+which looks like so:
+
+![Outline View using InlineOutline](docs/Outline View.jpg)
+
+
+# 2
 
 I personally like it when `escape` closes the results view.  You can add that
 to your own key bindings.  E.g.
