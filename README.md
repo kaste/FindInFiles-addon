@@ -65,7 +65,7 @@ Registering "local symbols" populates the Goto panel.  I use it in combination
 with the [InlineOutline](https://packagecontrol.io/packages/InlineOutline) plugin,
 which looks like so:
 
-![Outline View using InlineOutline](docs/Outline View.jpg)
+![Outline View using InlineOutline](docs/Outline%20View.jpg)
 
 
 # 2
