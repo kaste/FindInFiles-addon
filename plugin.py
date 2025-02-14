@@ -341,12 +341,8 @@ def on_search_finished(view: sublime.View, fn: LoadedCallback) -> None:
 
 
 class fif_addon_wait_for_search_to_be_done_listener(sublime_plugin.EventListener):
-    def is_applicable(self, view):
-        syntax = view.settings().get("syntax")
-        return syntax.endswith("Find Results.hidden-tmLanguage") if syntax else False
-
     def on_modified(self, view):
-        if self.is_applicable(view):
+        if is_applicable(view):
             text = view.substr(view.line(view.size() - 1))
             if SEARCH_SUMMARY_RE.search(text) is None:
                 return
@@ -375,11 +371,8 @@ class fif_addon_listener(sublime_plugin.EventListener):
     change_counts_by_window: Dict[sublime.Window, int] = {}
     handle_modified_events: Dict[sublime.Window, bool] = {}
 
-    def is_applicable(self, view):
-        return view.match_selector(0, "text.find-in-files")
-
     def on_activated_async(self, view):
-        if self.is_applicable(view):
+        if is_applicable(view):
             view.settings().set("result_line_regex", "^ +([0-9]+)")
             this_package_name = Path(__file__).parent.stem
             syntax_file = f"Packages/{this_package_name}/FindInFiles.sublime-syntax"
@@ -396,14 +389,14 @@ class fif_addon_listener(sublime_plugin.EventListener):
                     place_view(window, view, previous_view)
 
     def on_modified_async(self, view):
-        if self.is_applicable(view):
+        if is_applicable(view):
             window = view.window()
             if self.handle_modified_events.get(window):
                 current_cc = view.change_count()
                 self.change_counts_by_window[window] = current_cc
 
     def on_pre_close(self, view):
-        if self.is_applicable(view):
+        if is_applicable(view):
             window = view.window()
             self.change_counts_by_window.pop(window, None)
             self.previous_views.pop(window, None)
@@ -414,9 +407,13 @@ class fif_addon_listener(sublime_plugin.EventListener):
             window = view.window()
             self.previous_views[window] = view
 
-        if self.is_applicable(view):
+        if is_applicable(view):
             window = view.window()
             self.handle_modified_events[window] = False
+
+
+def is_applicable(view):
+    return view.match_selector(0, "text.find-in-files")
 
 
 def place_view(window: sublime.Window, view: sublime.View, after: sublime.View) -> None:
