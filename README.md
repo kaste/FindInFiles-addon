@@ -59,7 +59,7 @@ be just the standard bindings, you already use in the Find-panel to toggle the
 switches.
 
 
-# 1
+### 1
 
 Registering "local symbols" populates the Goto panel.  I use it in combination
 with the [InlineOutline](https://packagecontrol.io/packages/InlineOutline) plugin,
@@ -68,7 +68,7 @@ which looks like so:
 ![Outline View using InlineOutline](docs/Outline%20View.jpg)
 
 
-# 2
+### 2
 
 I personally like it when `escape` closes the results view.  You can add that
 to your own key bindings.  E.g.
