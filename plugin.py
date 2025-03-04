@@ -382,7 +382,7 @@ def update_searching_headline(view, text):
     last_search_start = view.find(
         r"^Searching \d+ files .*",
         view.size(),
-        sublime.FindFlags.REVERSE  # type: ignore[attr-defined]
+        sublime.FindFlags.REVERSE
     )
     if view.substr(last_search_start).endswith(text):
         return
