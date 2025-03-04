@@ -11,7 +11,7 @@ import sublime_plugin
 
 from typing import (
     Callable, DefaultDict, Dict, Iterable, Iterator, List, Literal,
-    Optional, Tuple, TypeVar, Union,
+    NamedTuple, Optional, Tuple, TypeVar, Union,
 )
 T = TypeVar("T")
 LoadedCallback = Callable[[sublime.View], None]
@@ -498,7 +498,7 @@ class fif_addon_goto(sublime_plugin.TextCommand):
         assert window
 
         cursor = caret(view)
-        r, c = view.rowcol(cursor)
+        r, _ = view.rowcol(cursor)
         prev_loc, self.prev_loc = self.prev_loc, (view.substr(view.line(cursor)), r)
         if (
             preview == "toggle"
@@ -508,48 +508,56 @@ class fif_addon_goto(sublime_plugin.TextCommand):
             close_preview(view)
             return
 
-        column_offset = column_offset_at(view, cursor)
-        col = max(0, c - column_offset)
-        s = view.sel()[0]
-        count_line_breaks = len(view.lines(s)) - 1
-        len_s = s.b - s.a
-        if len_s < 0:
-            len_s += count_line_breaks * column_offset
+        goto_positions = extract_goto_positions(view)
+        # print("goto_positions", goto_positions)
+        if not goto_positions:
+            return
+
+        selected = goto_positions[0]
+
+        is_result_panel = view not in window.views()
+        in_tab = sublime.ENCODED_POSITION
+        side_by_side = (
+            in_tab |
+            sublime.FORCE_GROUP |
+            sublime.SEMI_TRANSIENT |
+            sublime.ADD_TO_SELECTION |
+            sublime.CLEAR_TO_RIGHT
+        )
+        open_file = partial(window.open_file, selected.goto, group=-1)
+        if is_result_panel:
+            view_ = open_file(in_tab | sublime.TRANSIENT)
+            window.focus_view(view)
+
+        elif preview:
+            view_ = open_file(side_by_side)
+            window.focus_view(view)
+
+        elif find_in_files_side_by_side_is_set():
+            view_ = open_file(side_by_side)
+
         else:
-            len_s -= count_line_breaks * column_offset
+            if preview_is_open(view):
+                close_preview(view)
+            view_ = open_file(in_tab)
 
-        with restore_selection(view):
-            view.run_command("move_to", {"to": "hardbol"})
-            if preview:
-                with side_by_side_enabled(view):
-                    window.run_command("next_result")
-                    view_ = window.active_view()
-                    window.focus_view(view)
-
-            else:
-                if (
-                    preview_is_open(view)
-                    and not find_in_files_side_by_side_is_set()
-                ):
-                    close_preview(view)
-
-                window.run_command("next_result")
-                view_ = window.active_view()
-
-            if view_:
-                def carry_selection_to_view(view):
-                    caret_ = caret(view) + col
-                    set_sel(view, [sublime.Region(caret_ - len_s, caret_)])
-
-                def carry_selection_to_view_deferred(view):
-                    sublime.set_timeout(partial(carry_selection_to_view, view))
-
-                side_effect = (
-                    carry_selection_to_view_deferred
-                    if (sheet_ := view_.sheet()) and sheet_.is_semi_transient()
-                    else carry_selection_to_view
+        if view_:
+            def carry_selection_to_view(view):
+                sublime.set_timeout(lambda:
+                    view.run_command("fif_addon_set_selection", {  # noqa: E128
+                        "start": selected.start, "end": selected.end
+                    })
                 )
-                when_loaded(view_, side_effect)
+
+            when_loaded(view_, carry_selection_to_view)
+
+
+class fif_addon_set_selection(sublime_plugin.TextCommand):
+    def run(self, edit, start, end):
+        view = self.view
+        r = sublime.Region(view.text_point(*start), view.text_point(*end))
+        set_sel(view, [r])
+        view.show(r, True)
 
 
 def close_preview(view: sublime.View):
@@ -567,21 +575,6 @@ def close_preview(view: sublime.View):
         ):
             other_view.close()
     window.run_command("unselect_others")
-
-
-@contextmanager
-def side_by_side_enabled(view: sublime.View):
-    settings = sublime.load_settings("Preferences.sublime-settings")
-    user_setting = settings.get("find_in_files_side_by_side")
-    if user_setting in (True, None):
-        yield
-
-    else:
-        settings.set("find_in_files_side_by_side", True)
-        try:
-            yield
-        finally:
-            settings.set("find_in_files_side_by_side", user_setting)
 
 
 def find_in_files_side_by_side_is_set() -> bool:
@@ -624,13 +617,6 @@ def run_handlers(view, storage: Dict[sublime.View, List[LoadedCallback]]):
         sublime.set_timeout(partial(fn, view))
 
 
-@contextmanager
-def restore_selection(view: sublime.View):
-    frozen_sel = [s for s in view.sel()]
-    yield
-    set_sel(view, frozen_sel)
-
-
 def caret(view: sublime.View) -> int:
     return view.sel()[0].b
 
@@ -642,6 +628,164 @@ def column_offset_at(view: sublime.View, pt: int) -> int:
             return r.b + 2 - line_region.a  # 2 spaces or `: `
     else:
         return 0
+
+
+class GotoDefinition(NamedTuple):
+    filename: str
+    start: tuple[int, int]
+    end: tuple[int, int]
+
+    @property
+    def goto(self):
+        return f"{self.filename}:{self.start[0]}:{self.start[1]}"
+
+
+def extract_goto_positions(view) -> list[GotoDefinition]:
+    """
+    Extract goto positions from search buffer based on user selections.
+    Supports multiple cursors, and selections across multiple matches.
+    """
+    frozen_sel = list(view.sel())
+    matches = view.get_regions("match")
+    filenames = view.find_by_selector("entity.name.filename.find-in-files")
+
+    results = []
+    for region in frozen_sel:
+        if _is_selection_within_code_block(view, region):
+            results += _extract_position_from_region(view, region, filenames)
+
+        elif (file_region := _is_selection_within_filename(region, filenames)):
+            results += _handle_filename_selection(view, region, file_region, matches)
+
+        else:
+            results += _handle_free_form_selection(view, region, filenames, matches)
+
+    return results
+
+
+def _is_selection_within_code_block(view: sublime.View, region: sublime.Region) -> bool:
+    """Determine if a selection is completely within a single code block."""
+    if not _is_in_code_block(view, region.begin()):
+        return False
+    if len(view.lines(region)) == 1:  # optimize for the typical call
+        return True
+    return _get_code_block_bounds(view, region.begin()).contains(region)
+
+
+def _is_in_code_block(view: sublime.View, pt: int) -> bool:
+    """Determine if a point is within a code block (lines that start with space)."""
+    line_region = view.line(pt)
+    line_text = view.substr(line_region)
+    return line_text.startswith(' ')
+
+
+def _is_selection_within_filename(
+    region: sublime.Region,
+    filenames: list[sublime.Region]
+) -> sublime.Region | Literal[False]:
+    for file_region in filenames:
+        if all(file_region.a <= pt <= file_region.b for pt in region):
+            return file_region
+    return False
+
+
+def _get_code_block_bounds(view: sublime.View, pt: int) -> sublime.Region:
+    """Get the boundaries of the code block containing the given point."""
+    separator = r"^\S.*\n|^\s+\.\..*\n|^\n"
+    start     = view.find(separator, pt, sublime.FindFlags.REVERSE)  # noqa: E221
+    end       = view.find(separator, pt)                             # noqa: E221
+    start_pt  = start.b if start else pt                             # noqa: E221
+    end_pt    = end.a if end else pt                                 # noqa: E221
+    return sublime.Region(start_pt, end_pt)
+
+
+def _find_containing_file(
+    view: sublime.View,
+    pt: int,
+    filenames: list[sublime.Region]
+) -> str | None:
+    """Find the filename for the code block containing the given point."""
+    for file_region in reversed(filenames):
+        if file_region.a <= pt:
+            return view.substr(file_region)
+    return None
+
+
+def _extract_position_from_region(
+    view: sublime.View,
+    region: sublime.Region,
+    filename: str | list[sublime.Region]
+) -> list[GotoDefinition]:
+    """Extract position information from a region."""
+    if isinstance(filename, list):
+        filename = _find_containing_file(view, region.a, filename)  # type: ignore[assignment]
+        if not filename:
+            return []
+        assert not isinstance(filename, list)
+
+    col_offset = column_offset_at(view, region.a)
+
+    # do not work with begin() and end() to preserve the direction
+    # of the selection
+    start_line  = view.line(region.a)                                # noqa: E221
+    start_line_ = view.substr(start_line)
+    start_row   = int(start_line_[:col_offset].strip(" :"))          # noqa: E221
+    start_col   = max(0, region.a - start_line.a - col_offset)       # noqa: E221
+
+    if region.empty():
+        end_row  = start_row                                         # noqa: E221
+        end_line = start_line
+    else:
+        end_line    = view.line(region.b)                            # noqa: E221
+        end_line_   = view.substr(end_line)                          # noqa: E221
+        end_row     = int(end_line_[:col_offset].strip(" :"))        # noqa: E221
+    end_col     = max(0, region.b - end_line.a - col_offset)         # noqa: E221
+
+    return [GotoDefinition(filename, (start_row - 1, start_col), (end_row - 1, end_col))]
+
+
+def _handle_filename_selection(
+    view: sublime.View,
+    region: sublime.Region,
+    file_region: sublime.Region,
+    matches: list[sublime.Region]
+) -> list[GotoDefinition]:
+    """Handle a cursor position on a filename."""
+    for m in matches:
+        if m.a > file_region.a:
+            filename = view.substr(file_region)
+            return _extract_position_from_region(view, m, filename)
+    return []
+
+
+def _handle_free_form_selection(
+    view: sublime.View,
+    region: sublime.Region,
+    filenames: list[sublime.Region],
+    matches: list[sublime.Region]
+) -> Iterable[GotoDefinition]:
+    """Handle a free-form selection that spans multiple code blocks or files."""
+    # Expand partially selected code blocks
+    start = (
+        _get_code_block_bounds(view, region.begin())
+        if _is_in_code_block(view, region.begin())
+        else region
+    )
+    end = (
+        _get_code_block_bounds(view, region.end())
+        if _is_in_code_block(view, region.end())
+        else region
+    )
+    selection = sublime.Region(start.begin(), end.end())
+
+    return chain.from_iterable(
+        _extract_position_from_region(view, m, filenames)
+        for m in matches
+        if selection.a <= m.a <= selection.b
+    )
+
+
+# # UTILS
 
 
 def set_sel(view: sublime.View, selection: List[sublime.Region]) -> None:
