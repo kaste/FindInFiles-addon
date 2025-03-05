@@ -397,7 +397,6 @@ class fif_addon_listener(sublime_plugin.EventListener):
 
     def on_activated_async(self, view):
         if is_applicable(view):
-            view.settings().set("result_line_regex", "^ +([0-9]+)")
             this_package_name = Path(__file__).parent.stem
             syntax_file = f"Packages/{this_package_name}/FindInFiles.sublime-syntax"
             view.assign_syntax(syntax_file)

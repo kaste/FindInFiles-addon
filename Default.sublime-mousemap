@@ -1,0 +1,9 @@
+[
+    {
+        "button": "button1",
+        "count": 2,
+        "press_command": "drag_select",
+        "command": "fif_addon_goto",
+        "context": [{ "key": "selector", "operand": "text.find-in-files" }]
+    },
+]
