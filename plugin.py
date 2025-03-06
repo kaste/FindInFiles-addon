@@ -19,7 +19,7 @@ LoadedCallback = Callable[[sublime.View], None]
 filter_: Callable[[Iterable[Optional[T]]], Iterator[T]] = partial(filter, None)
 
 SEARCH_INFO_RE = re.compile(r'(?:"(?P<pattern>.+)")(?: \((?P<flags>.+)\))?')
-FLAG_TRANSLATIONS = {
+translate_flag = {
     "regex": "regex",
     "case sensitive": "case_sensitive",
     "whole word": "whole_word"
@@ -77,10 +77,10 @@ class fif_addon_refresh_last_search(sublime_plugin.TextCommand):
         search_headline_span = view.line(last_search_start.a)
         search_info = view.substr(search_headline_span)
         if (match := SEARCH_INFO_RE.search(search_info)):
-            used_flags = set(
-                FLAG_TRANSLATIONS[user_friendly_flag]
+            used_flags = {
+                translate_flag[user_friendly_flag]
                 for user_friendly_flag in flags.split(", ")
-            ) if (flags := match.group("flags")) else {}
+            } if (flags := match.group("flags")) else {}
             options = {
                 "pattern": match.group("pattern"),
                 **{
