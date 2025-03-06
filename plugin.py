@@ -39,6 +39,7 @@ class fif_addon_quick_search(sublime_plugin.TextCommand):
         assert window
         window.run_command("show_panel", {
             "panel": "find_in_files",
+            "pattern": view.substr(sel),
             "where": where,
             "regex": False,
             "case_sensitive": False,
