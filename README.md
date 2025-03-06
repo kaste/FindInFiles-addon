@@ -80,11 +80,13 @@ to your own key bindings.  E.g.
         "context": [
             { "key": "selector", "operand": "text.find-in-files" },
             // negate all default escape contexts, even if they're not likely to ever match
+            // adjust to your liking
             { "key": "auto_complete_visible", "operator": "not_equal" },
-            { "key": "has_prev_field", "operator": "not_equal" },
             { "key": "has_next_field", "operator": "not_equal" },
+            { "key": "has_prev_field", "operator": "not_equal" },
             { "key": "num_selections", "operator": "equal", "operand": 1 },
             { "key": "overlay_visible", "operator": "not_equal" },
+            { "key": "panel_has_focus", "operator": "not_equal" },
             { "key": "panel_visible", "operator": "not_equal" },
             { "key": "popup_visible", "operator": "not_equal" },
         ]
