@@ -14,7 +14,6 @@ from typing import (
     NamedTuple, Optional, Tuple, TypeVar, Union,
 )
 T = TypeVar("T")
-LoadedCallback = Callable[[sublime.View], None]
 
 filter_: Callable[[Iterable[Optional[T]]], Iterator[T]] = partial(filter, None)
 
@@ -333,63 +332,6 @@ def replace_view_content(view, text, region: Union[int, sublime.Region]) -> None
     view.run_command("fif_addon_replace_text", {"text": text, "region": region_})
 
 
-SEARCH_SUMMARY_RE = re.compile(r"\d+ match(es)? .*")
-SEARCH_HEADER_RE = re.compile(r"^Searching \d+ files .*")
-_on_search_finished: DefaultDict[sublime.View, List[LoadedCallback]] = defaultdict(list)
-_pending_first_result: set[sublime.View] = set()
-
-
-def on_search_finished(view: sublime.View, fn: LoadedCallback) -> None:
-    _on_search_finished[view].append(fn)
-
-
-class fif_addon_wait_for_search_to_be_done_listener(sublime_plugin.EventListener):
-    def on_modified(self, view):
-        if is_applicable(view):
-            caret = view.sel()[0].a
-            if view.size() - caret in (
-                0,  # on new buffers
-                1   # when reusing views because of a trailing \n
-            ):
-                _pending_first_result.add(view)
-
-            elif (
-                view in _pending_first_result
-                and (text := view.substr(view.line(caret)))
-                and SEARCH_HEADER_RE.match(text)
-                and any(r.a > caret for r in view.get_regions("match"))
-            ):
-                fx = partial(view.run_command, "fif_addon_next_match")
-                if caret == 0:
-                    sublime.set_timeout(fx)
-                else:
-                    fx()
-                _pending_first_result.discard(view)
-
-            text = view.substr(view.line(view.size() - 1))
-            if SEARCH_SUMMARY_RE.search(text) is None:
-                return
-
-            update_searching_headline(view, text)
-            run_handlers(view, _on_search_finished)
-            _pending_first_result.discard(view)
-
-
-def update_searching_headline(view, text):
-    if text.startswith("0"):
-        return
-
-    last_search_start = view.find(
-        r"^Searching \d+ files .*",
-        view.size(),
-        sublime.FindFlags.REVERSE
-    )
-    if view.substr(last_search_start).endswith(text):
-        return
-
-    replace_view_content(view, f", {text}", last_search_start.b)
-
-
 class fif_addon_listener(sublime_plugin.EventListener):
     previous_views: Dict[sublime.Window, sublime.View] = {}
     change_counts_by_window: Dict[sublime.Window, int] = {}
@@ -590,20 +532,75 @@ def preview_is_open(view: sublime.View) -> bool:
     return len(selected_sheets) == 2 and view.sheet() in selected_sheets
 
 
-VIEWS_YET_TO_BE_LOADED: DefaultDict[sublime.View, List[LoadedCallback]] \
-    = defaultdict(list)
+SEARCH_SUMMARY_RE = re.compile(r"\d+ match(es)? .*")
+SEARCH_HEADER_RE = re.compile(r"^Searching \d+ files .*")
+LoadedCallback = Callable[[sublime.View], None]
+_on_loaded: DefaultDict[sublime.View, List[LoadedCallback]] = defaultdict(list)
+_on_search_finished: DefaultDict[sublime.View, List[LoadedCallback]] = defaultdict(list)
+_pending_first_result: set[sublime.View] = set()
+
+
+def on_search_finished(view: sublime.View, fn: LoadedCallback) -> None:
+    _on_search_finished[view].append(fn)
+
+
+class fif_addon_wait_for_search_to_be_done_listener(sublime_plugin.EventListener):
+    def on_modified(self, view):
+        if is_applicable(view):
+            caret = view.sel()[0].a
+            if view.size() - caret in (
+                0,  # on new buffers
+                1   # when reusing views because of a trailing \n
+            ):
+                _pending_first_result.add(view)
+
+            elif (
+                view in _pending_first_result
+                and (text := view.substr(view.line(caret)))
+                and SEARCH_HEADER_RE.match(text)
+                and any(r.a > caret for r in view.get_regions("match"))
+            ):
+                fx = partial(view.run_command, "fif_addon_next_match")
+                if caret == 0:
+                    sublime.set_timeout(fx)
+                else:
+                    fx()
+                _pending_first_result.discard(view)
+
+            text = view.substr(view.line(view.size() - 1))
+            if SEARCH_SUMMARY_RE.search(text) is None:
+                return
+
+            update_searching_headline(view, text)
+            run_handlers(view, _on_search_finished)
+            _pending_first_result.discard(view)
+
+
+def update_searching_headline(view, text):
+    if text.startswith("0"):
+        return
+
+    last_search_start = view.find(
+        r"^Searching \d+ files .*",
+        view.size(),
+        sublime.FindFlags.REVERSE
+    )
+    if view.substr(last_search_start).endswith(text):
+        return
+
+    replace_view_content(view, f", {text}", last_search_start.b)
 
 
 def when_loaded(view: sublime.View, kont: LoadedCallback) -> None:
     if view.is_loading():
-        VIEWS_YET_TO_BE_LOADED[view].append(kont)
+        _on_loaded[view].append(kont)
     else:
         kont(view)
 
 
 class fif_addon_await_loading_views(sublime_plugin.EventListener):
     def on_load(self, view):
-        run_handlers(view, VIEWS_YET_TO_BE_LOADED)
+        run_handlers(view, _on_loaded)
 
 
 def run_handlers(view, storage: Dict[sublime.View, List[LoadedCallback]]):
