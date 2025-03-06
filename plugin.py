@@ -124,8 +124,7 @@ class fif_addon_refresh_last_search(sublime_plugin.TextCommand):
             window.run_command("find_all")
         window.run_command("focus_panel", {"name": "find_results"})
 
-        is_result_buffer = view in window.views()
-        if last_search_output_span.a == 0 and is_result_buffer:
+        if last_search_output_span.a == 0 and is_result_buffer(view, window):
             on_search_finished(view, fix_leading_newlines)
 
         if row > top_row:
@@ -456,7 +455,6 @@ class fif_addon_goto(sublime_plugin.TextCommand):
 
         selected = goto_positions[0]
 
-        is_result_panel = view not in window.views()
         in_tab = sublime.ENCODED_POSITION
         side_by_side = (
             in_tab |
@@ -466,7 +464,7 @@ class fif_addon_goto(sublime_plugin.TextCommand):
             sublime.CLEAR_TO_RIGHT
         )
         open_file = partial(window.open_file, selected.goto, group=-1)
-        if is_result_panel:
+        if not is_result_buffer(view, window):
             view_ = open_file(in_tab | sublime.TRANSIENT)
             window.focus_view(view)
 
@@ -530,6 +528,10 @@ def preview_is_open(view: sublime.View) -> bool:
     group, _ = window.get_view_index(view)
     selected_sheets = window.selected_sheets_in_group(group)
     return len(selected_sheets) == 2 and view.sheet() in selected_sheets
+
+
+def is_result_buffer(view: sublime.View, window: sublime.Window) -> bool:
+    return view in window.views()
 
 
 SEARCH_SUMMARY_RE = re.compile(r"\d+ match(es)? .*")
