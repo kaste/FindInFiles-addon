@@ -76,7 +76,7 @@ to your own key bindings.  E.g.
 ```
     {
         "keys": ["escape"],
-        "command": "close",
+        "command": "fif_addon_goto_abort_search",
         "context": [
             { "key": "selector", "operand": "text.find-in-files" },
             // negate all default escape contexts, even if they're not likely to ever match
@@ -92,3 +92,6 @@ to your own key bindings.  E.g.
         ]
     }
 ```
+
+The command `fif_addon_goto_abort_search` basically is like `close`, just that it
+also closes the preview if any is open.

@@ -51,6 +51,19 @@ class fif_addon_quick_search(sublime_plugin.TextCommand):
         window.run_command("focus_panel", {"name": "find_results"})
 
 
+class fif_addon_goto_abort_search(sublime_plugin.TextCommand):
+    def run(self, edit):
+        view = self.view
+        window = view.window()
+        assert window
+        if is_result_buffer(view, window):
+            if preview_is_open(view):
+                close_preview(view)
+            view.close()
+        else:
+            window.run_command("hide_panel", {"cancel": True})
+
+
 class fif_addon_refresh_last_search(sublime_plugin.TextCommand):
     """Delete last search result and do the search again
 
