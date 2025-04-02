@@ -445,12 +445,19 @@ class fif_addon_prev_match(sublime_plugin.TextCommand):
 class fif_addon_goto(sublime_plugin.TextCommand):
     prev_loc = ("", -1)
 
-    def run(self, edit, preview: bool | Literal["toggle"] = False):
+    def want_event(self) -> bool:
+        return True
+
+    def run(self, edit, preview: bool | Literal["toggle"] = False, event=None):
         view = self.view
         window = view.window()
         assert window
 
-        cursor = caret(view)
+        cursor = (
+            caret(view)
+            if event is None else
+            view.window_to_text((event["x"], event["y"]))
+        )
         r, _ = view.rowcol(cursor)
         prev_loc, self.prev_loc = self.prev_loc, (view.substr(view.line(cursor)), r)
         if (
