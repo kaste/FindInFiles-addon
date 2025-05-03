@@ -582,11 +582,7 @@ class fif_addon_wait_for_search_to_be_done_listener(sublime_plugin.EventListener
                 and SEARCH_HEADER_RE.match(text)
                 and any(r.a > caret for r in view.get_regions("match"))
             ):
-                fx = partial(view.run_command, "fif_addon_next_match")
-                if caret == 0:
-                    sublime.set_timeout(fx)
-                else:
-                    fx()
+                sublime.set_timeout(lambda: view.run_command("fif_addon_next_match"))
                 _pending_first_result.discard(view)
 
             text = view.substr(view.line(view.size() - 1))
