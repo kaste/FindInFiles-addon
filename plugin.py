@@ -2,7 +2,7 @@ from __future__ import annotations
 from collections import defaultdict
 from contextlib import contextmanager
 from functools import partial
-from itertools import chain, tee
+from itertools import chain, starmap, tee
 from pathlib import Path
 import re
 
@@ -504,7 +504,10 @@ class fif_addon_goto(sublime_plugin.TextCommand):
             def carry_selection_to_view(view):
                 sublime.set_timeout(lambda:
                     view.run_command("fif_addon_set_selection", {  # noqa: E128
-                        "start": selected.start, "end": selected.end
+                        "text_positions": [
+                            p for p in goto_positions
+                            if p.filename == selected.filename
+                        ]
                     })
                 )
 
@@ -512,11 +515,17 @@ class fif_addon_goto(sublime_plugin.TextCommand):
 
 
 class fif_addon_set_selection(sublime_plugin.TextCommand):
-    def run(self, edit, start, end):
+    def run(self, edit, text_positions: list[tuple[str, tuple[int, int], tuple[int, int]]]):
+        if not text_positions:
+            return
         view = self.view
-        r = sublime.Region(view.text_point(*start), view.text_point(*end))
-        set_sel(view, [r])
-        view.show(r, True)
+        r = [
+            sublime.Region(view.text_point(*p.start), view.text_point(*p.end))
+            for p_ in starmap(GotoDefinition, text_positions)
+            if (p := GotoDefinition(*p_))
+        ]
+        set_sel(view, r)
+        view.show(r[0], True)
 
 
 def close_preview(view: sublime.View):
