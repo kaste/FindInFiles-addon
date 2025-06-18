@@ -11,7 +11,7 @@ import sublime_plugin
 
 from typing import (
     Callable, DefaultDict, Dict, Iterable, Iterator, List, Literal,
-    NamedTuple, Optional, Tuple, TypeVar, Union,
+    NamedTuple, Optional, Sequence, Tuple, TypeVar, Union,
 )
 T = TypeVar("T")
 
@@ -404,7 +404,7 @@ def place_view(window: sublime.Window, view: sublime.View, after: sublime.View) 
 
 
 class fif_addon_next_match(sublime_plugin.TextCommand):
-    def run(self, edit):
+    def run(self, edit, select=True):
         def carets(view):
             yield view.sel()[0].b
             try:
@@ -417,7 +417,7 @@ class fif_addon_next_match(sublime_plugin.TextCommand):
         for caret in carets(view):
             for r in regions:
                 if r.begin() > caret:
-                    set_sel(view, [r])
+                    set_sel(view, [r if select else r.begin()])
                     view.show(r, True)
                     if preview_is_open(view):
                         view.run_command("fif_addon_goto", {"preview": True})
@@ -425,7 +425,7 @@ class fif_addon_next_match(sublime_plugin.TextCommand):
 
 
 class fif_addon_prev_match(sublime_plugin.TextCommand):
-    def run(self, edit):
+    def run(self, edit, select=True):
         def carets(view):
             yield view.sel()[0].b
             yield view.size()
@@ -435,7 +435,7 @@ class fif_addon_prev_match(sublime_plugin.TextCommand):
         for caret in carets(view):
             for r in reversed(regions):
                 if r.end() < caret:
-                    set_sel(view, [r])
+                    set_sel(view, [r if select else r.begin()])
                     view.show(r, True)
                     if preview_is_open(view):
                         view.run_command("fif_addon_goto", {"preview": True})
@@ -591,7 +591,9 @@ class fif_addon_wait_for_search_to_be_done_listener(sublime_plugin.EventListener
                 and SEARCH_HEADER_RE.match(text)
                 and any(r.a > caret for r in view.get_regions("match"))
             ):
-                sublime.set_timeout(lambda: view.run_command("fif_addon_next_match"))
+                sublime.set_timeout(
+                    lambda: view.run_command("fif_addon_next_match", {"select": False})
+                )
                 _pending_first_result.discard(view)
 
             text = view.substr(view.line(view.size() - 1))
@@ -811,7 +813,7 @@ def _handle_free_form_selection(
 # # UTILS
 
 
-def set_sel(view: sublime.View, selection: List[sublime.Region]) -> None:
+def set_sel(view: sublime.View, selection: Sequence[sublime.Region | sublime.Point]) -> None:
     sel = view.sel()
     sel.clear()
     sel.add_all(selection)
