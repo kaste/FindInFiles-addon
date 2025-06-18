@@ -11,8 +11,9 @@ import sublime_plugin
 
 from typing import (
     Callable, DefaultDict, Dict, Iterable, Iterator, List, Literal,
-    NamedTuple, Optional, Sequence, Tuple, TypeVar, Union,
+    NamedTuple, Optional, Protocol, Sequence, Tuple, TypeVar, Union,
 )
+from typing_extensions import TypeGuard
 T = TypeVar("T")
 
 filter_: Callable[[Iterable[Optional[T]]], Iterator[T]] = partial(filter, None)
@@ -287,11 +288,17 @@ def check_if_result_changed(view, previous_result):
         window.status_message("Search result already up-to-date.")
 
 
-def restore_previous_cursor(view: sublime.View, row_offset, col, position_description):
+def restore_previous_cursor(
+    view: sublime.View,
+    row_offset,
+    col,
+    position_description,
+    early_exit=False
+) -> bool:
     try:
         last_search_start = view.find_all(r"^Searching \d+ files")[-1]
     except IndexError:
-        return
+        return False
 
     start, end = last_search_start.a, view.size()
     filename, line_candidates = position_description
@@ -307,7 +314,8 @@ def restore_previous_cursor(view: sublime.View, row_offset, col, position_descri
                 if view.substr(r) == filename
             )
         except StopIteration:
-            pass
+            if early_exit:
+                return False
 
     try:
         start = next(
@@ -318,11 +326,13 @@ def restore_previous_cursor(view: sublime.View, row_offset, col, position_descri
             if full_line_content_at(view, r.a).endswith(line)
         )
     except StopIteration:
-        pass
+        if early_exit:
+            return False
 
     next_row, _ = view.rowcol(start)
     cursor_now = view.text_point(next_row, col)
     view.run_command("fif_addon_set_cursor", {"cursor": cursor_now, "offset": row_offset})
+    return True
 
 
 class fif_addon_set_cursor(sublime_plugin.TextCommand):
@@ -563,27 +573,46 @@ def is_result_buffer(view: sublime.View, window: sublime.Window) -> bool:
     return view in window.views()
 
 
+class ScrollerCallback(Protocol):
+    def __call__(self, __view: sublime.View, *, early_exit: bool = False):
+        ...
+
+
 SEARCH_SUMMARY_RE = re.compile(r"\d+ match(es)? .*")
 SEARCH_HEADER_RE = re.compile(r"^Searching \d+ files .*")
-LoadedCallback = Callable[[sublime.View], None]
+LoadedCallback = Callable[[sublime.View], object]
 _on_loaded: DefaultDict[sublime.View, List[LoadedCallback]] = defaultdict(list)
-_on_search_finished: DefaultDict[sublime.View, List[LoadedCallback]] = defaultdict(list)
+_on_search_finished: DefaultDict[sublime.View, List[LoadedCallback | ScrollerCallback]] \
+    = defaultdict(list)
 _pending_first_result: set[sublime.View] = set()
+_pending_scrolling: set[sublime.View] = set()
 
 
 def on_search_finished(view: sublime.View, fn: LoadedCallback) -> None:
     _on_search_finished[view].append(fn)
 
 
+def is_scoller(fn: Callable) -> TypeGuard[ScrollerCallback]:
+    if isinstance(fn, partial):
+        fn = fn.func
+    return fn.__name__ == "restore_previous_cursor"
+
+
 class fif_addon_wait_for_search_to_be_done_listener(sublime_plugin.EventListener):
     def on_modified(self, view):
         if is_applicable(view):
+            scroller: list[ScrollerCallback] = [
+                f for f in _on_search_finished.get(view, [])
+                if is_scoller(f)
+            ]
             caret = view.sel()[0].a
             if view.size() - caret in (
                 0,  # on new buffers
                 1   # when reusing views because of a trailing \n
             ):
                 _pending_first_result.add(view)
+                if scroller:
+                    _pending_scrolling.add(view)
 
             elif (
                 view in _pending_first_result
@@ -595,6 +624,12 @@ class fif_addon_wait_for_search_to_be_done_listener(sublime_plugin.EventListener
                     lambda: view.run_command("fif_addon_next_match", {"select": False})
                 )
                 _pending_first_result.discard(view)
+
+            elif (
+                view in _pending_scrolling
+                and all(f(view, early_exit=True) for f in scroller)
+            ):
+                _pending_scrolling.discard(view)
 
             text = view.substr(view.line(view.size() - 1))
             if SEARCH_SUMMARY_RE.search(text) is None:
