@@ -531,8 +531,7 @@ class fif_addon_set_selection(sublime_plugin.TextCommand):
         view = self.view
         r = [
             sublime.Region(view.text_point(*p.start), view.text_point(*p.end))
-            for p_ in starmap(GotoDefinition, text_positions)
-            if (p := GotoDefinition(*p_))
+            for p in starmap(GotoDefinition, text_positions)
         ]
         set_sel(view, r)
         view.show(r[0], True)
